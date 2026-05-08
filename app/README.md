@@ -29,7 +29,7 @@ mvn -version
 
 ### Windows
 
-#### Tramite riga di comando
+#### Tramite powershell
 
 ```sh
 # Installazione Java JDK 21
@@ -44,7 +44,7 @@ java -version
 mvn -version
 ```
 
-## Metodo manuale
+#### Metodo manuale
 1. Scaricare e installare **Java JDK 21+** da [adoptium.net](https://adoptium.net/)
 2. Aggiungere `JAVA_HOME` alle variabili d'ambiente di sistema:
    - Variabile: `JAVA_HOME`
@@ -90,7 +90,29 @@ Una volta avviati entrambi, l'applicazione è raggiungibile su:
 
 👉 http://127.0.0.1:8080/
 
-> **Nota:** attendere che il Code Server stampi `The code server is ready` prima di aprire il browser.
+
+
+---
+
+## Eseguire i test
+
+Per eseguire tutti i test JUnit del progetto:
+
+```sh
+mvn test
+```
+
+Per eseguire i test di un modulo specifico:
+
+```sh
+mvn test -pl *-server
+```
+
+Per eseguire una singola classe di test:
+
+```sh
+mvn test -pl *-server -Dtest=NomeDellaClasseTest
+```
 
 ---
 
