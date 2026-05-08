@@ -3,6 +3,9 @@ FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY . .
 
+
+RUN mvn clean install -DskipTests
+
 # 1. Compiliamo il client. 
 # Questo genera i file JS in skillshare-client/target/skillshare-client-1.0-SNAPSHOT/
 RUN mvn clean package -pl skillshare-client -am -DskipTests -Denv=dev
