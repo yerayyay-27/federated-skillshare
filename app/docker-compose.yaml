@@ -1,0 +1,12 @@
+services:
+  app:
+    build: .
+    container_name: skillshare-app
+    ports:
+      - "8080:8080"
+    environment:
+      - env=dev
+      - DATA_DIR=/var/lib/skillshare/db
+    volumes:
+      - ./dockerdata:/var/lib/skillshare/db
+    restart: unless-stopped
