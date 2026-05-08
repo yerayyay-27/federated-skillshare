@@ -1,42 +1,121 @@
+# Nome Progetto
+
+Progetto GWT + Maven con supporto al deploy via Docker.
+
+---
+
 # Sviluppo locale
 
-Assicuratevi di aver installato java jdk 21+ e maven
+## Prerequisiti
 
-?? Istruzioni per ubutnu ??
-?? Istruzioni per windows ??
+Assicurarsi di avere installato **Java JDK 21+** e **Maven 3.8+**.
+
+### Ubuntu / Debian
+
+```sh
+# Installazione Java JDK 21
+sudo apt update
+sudo apt install -y openjdk-21-jdk
+
+# Verifica
+java -version
+
+# Installazione Maven
+sudo apt install -y maven
+
+# Verifica
+mvn -version
+```
+
+### Windows
+
+#### Tramite riga di comando
+
+```sh
+# Installazione Java JDK 21
+winget install EclipseAdoptium.Temurin.21.JDK
+# Installazione Maven
+winget install Apache.Maven
+```
+
+```sh
+# Verifica
+java -version
+mvn -version
+```
+
+## Metodo manuale
+1. Scaricare e installare **Java JDK 21+** da [adoptium.net](https://adoptium.net/)
+2. Aggiungere `JAVA_HOME` alle variabili d'ambiente di sistema:
+   - Variabile: `JAVA_HOME`
+   - Valore: percorso di installazione JDK (es. `C:\Program Files\Eclipse Adoptium\jdk-21`)
+3. Aggiungere `%JAVA_HOME%\bin` alla variabile `Path`
+4. Scaricare **Maven** da [maven.apache.org](https://maven.apache.org/download.cgi), estrarlo e aggiungere la cartella `bin` alla variabile `Path`
+5. Verificare l'installazione aprendo un terminale (cmd o PowerShell):
+
+```sh
+java -version
+mvn -version
+```
+
+---
 
 ## Primo avvio
-``` sh
+
+Compilare e installare tutte le dipendenze del progetto:
+
+```sh
 mvn clean install
 ```
 
-## Per lanciare il progetto in modalità di sviluppo
+---
 
-``` sh
+## Avvio in modalità sviluppo
+
+Il progetto si avvia con due processi separati da lanciare in **due terminali distinti**.
+
+**Terminale 1 — GWT Code Server** (compilazione incrementale del frontend):
+
+```sh
 mvn gwt:codeserver -pl *-client -am
 ```
 
-``` sh
+**Terminale 2 — Server Jetty** (backend):
+
+```sh
 mvn jetty:run -pl *-server -am -Denv=dev
 ```
 
-Potete accedere all'applicazione su http://127.0.0.1:8080/
+Una volta avviati entrambi, l'applicazione è raggiungibile su:
 
+👉 http://127.0.0.1:8080/
 
-# Deploy con docker
+> **Nota:** attendere che il Code Server stampi `The code server is ready` prima di aprire il browser.
 
+---
 
-## Lancio
-``` sh
+# Deploy con Docker
+
+> Assicurarsi di avere **Docker** e **Docker Compose** installati.
+
+## Avvio
+
+```sh
 docker compose up -d --build
 ```
 
-## Distruzione
+## Arresto e rimozione dei container
+
 ```sh
 docker compose down
 ```
 
-
 ## Pulizia del database
 
-Eliminare la cartella dockerdata/
+Eliminare la cartella dei dati persistenti in app/dockerdata:
+
+```sh
+rm -rf dockerdata/
+```
+
+> ⚠️ **Attenzione:** questa operazione è irreversibile e comporta la perdita di tutti i dati salvati.
