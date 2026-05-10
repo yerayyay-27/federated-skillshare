@@ -8,5 +8,5 @@ services:
       - env=dev
       - DATA_DIR=/var/lib/skillshare/db
     volumes:
-      - ./dockerdata:/var/lib/skillshare/db
+      - ./:/var/lib/skillshare/db
     restart: unless-stopped

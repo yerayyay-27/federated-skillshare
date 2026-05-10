@@ -31,7 +31,7 @@ war/WEB-INF/lib/
 *.gwt.rpc
 
 # --- Database (MapDB) ---
-*.db
+# *.db # Se ignorate il file del database assicuratevi di riinserirlo prima di consegnare
 *.db.p
 *.db.t
 dockerdata/
