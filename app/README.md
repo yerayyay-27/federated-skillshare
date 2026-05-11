@@ -13,7 +13,7 @@ Assicurarsi di avere installato **Java JDK 17+** e **Maven 3.8+**.
 ### Ubuntu / Debian
 
 ```sh
-# Installazione Java JDK 21
+# Installazione Java JDK 17
 sudo apt update
 sudo apt install -y openjdk-17-jdk
 
@@ -45,7 +45,7 @@ mvn -version
 ```
 
 #### Metodo manuale
-1. Scaricare e installare **Java JDK 21+** da [adoptium.net](https://adoptium.net/)
+1. Scaricare e installare **Java JDK 17+** da [adoptium.net](https://adoptium.net/)
 2. Aggiungere `JAVA_HOME` alle variabili d'ambiente di sistema:
    - Variabile: `JAVA_HOME`
    - Valore: percorso di installazione JDK (es. `C:\Program Files\Eclipse Adoptium\jdk-17`)
