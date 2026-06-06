@@ -12,6 +12,7 @@
     <servlet-name>greetServlet</servlet-name>
     <url-pattern>/app/greet</url-pattern>
   </servlet-mapping>
+  
 
   <servlet>
     <servlet-name>ingredentiServlet</servlet-name>
@@ -20,6 +21,17 @@
   <servlet-mapping>
     <servlet-name>ingredentiServlet</servlet-name>
     <url-pattern>/app/ingredienti</url-pattern>
+  </servlet-mapping>
+
+
+  <!-- Autenticazione (login / registrazione) -->
+  <servlet>
+    <servlet-name>authServlet</servlet-name>
+    <servlet-class>it.unibo.AuthServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>authServlet</servlet-name>
+    <url-pattern>/app/auth</url-pattern>
   </servlet-mapping>
 
 	<!-- Default page to serve -->
