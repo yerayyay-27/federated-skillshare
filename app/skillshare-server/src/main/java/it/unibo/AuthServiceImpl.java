@@ -3,7 +3,7 @@ package it.unibo;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.gwt.user.server.rpc.RemoteServiceServlet;
+import com.google.gwt.user.server.rpc.jakarta.RemoteServiceServlet;
 
 public class AuthServiceImpl extends RemoteServiceServlet implements AuthService {
 
