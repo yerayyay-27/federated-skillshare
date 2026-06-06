@@ -2,3 +2,5 @@ Qui andranno inseriti tutti gli artefatti come: manuale sviluppatore, manualte u
 
 Diario del progetto:
 06/06/2026- Today we decided the task of each member, and started deciding the design of the project.
+
+jwu9diwuhd8uwh8udh
