@@ -24,7 +24,7 @@
   </servlet-mapping>
 
 
-  <!-- Autenticazione (login / registrazione) -->
+  <!-- Authentication (login / registration) -->
   <servlet>
     <servlet-name>authServlet</servlet-name>
     <servlet-class>it.unibo.AuthServiceImpl</servlet-class>

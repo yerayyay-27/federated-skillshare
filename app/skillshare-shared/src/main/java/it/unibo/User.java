@@ -2,13 +2,13 @@ package it.unibo;
 
 import java.io.Serializable;
 
-public class Utente implements Serializable {
+public class User implements Serializable {
     private String username;
     private String email;
 
-    public Utente() { } // necessario per la serializzazione GWT
+    public User() { } // required for GWT serialization
 
-    public Utente(String username, String email) {
+    public User(String username, String email) {
         this.username = username;
         this.email = email;
     }

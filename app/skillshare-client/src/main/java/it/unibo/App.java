@@ -12,6 +12,6 @@ public class App implements EntryPoint {
 	 * This is the entry point method.
 	 */
 	public void onModuleLoad() {
-		new LoginGui().mostra();
+		new LoginGui().show();
 	}
 }
