@@ -5,6 +5,20 @@ import com.google.gwt.user.server.rpc.jakarta.RemoteServiceServlet;
 @SuppressWarnings("serial")
 public class AuthServiceImpl extends RemoteServiceServlet implements AuthService {
 
+    private final UserRepository userRepository;
+
+    public AuthServiceImpl() {
+        this(new UserRepository());
+    }
+
+    // package-private constructor for tests (inject an in-memory repository)
+    AuthServiceImpl(UserRepository userRepository) {
+        if (userRepository == null) {
+            throw new IllegalArgumentException("User repository must not be null");
+        }
+        this.userRepository = userRepository;
+    }
+
     @Override
     public User login(String email, String password) throws IllegalArgumentException {
         if (email == null || password == null
@@ -12,10 +26,10 @@ public class AuthServiceImpl extends RemoteServiceServlet implements AuthService
             throw new IllegalArgumentException("Email and password are required");
         }
         String key = email.trim();
-        if (!UserRepository.checkPassword(key, password)) {
+        if (!userRepository.checkPassword(key, password)) {
             throw new IllegalArgumentException("Wrong email or password");
         }
-        return UserRepository.getUser(key);
+        return userRepository.getUser(key);
     }
 
     @Override
@@ -28,10 +42,10 @@ public class AuthServiceImpl extends RemoteServiceServlet implements AuthService
                 "Invalid data: the password must be at least 4 characters long");
         }
         String key = email.trim();
-        if (UserRepository.exists(key)) {
+        if (userRepository.exists(key)) {
             throw new IllegalArgumentException("A user with this email already exists");
         }
-        UserRepository.create(key, username.trim(), password);
-        return UserRepository.getUser(key);
+        userRepository.create(key, username.trim(), password);
+        return userRepository.getUser(key);
     }
 }

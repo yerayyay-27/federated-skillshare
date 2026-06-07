@@ -10,24 +10,26 @@ import org.mapdb.Serializer;
 
 /**
  * Centralized data access for users, backed by MapDB.
- * All services that need user data go through this class.
+ * Collections are opened in the constructor (not in static fields) so that
+ * DatabaseCore.enableTestMode() can swap the database to an in-memory one
+ * BEFORE the repository is created, allowing isolated unit tests.
  */
 public class UserRepository {
 
-    private static final DB db = DatabaseCore.getDB();
-
-    private static final ConcurrentMap<String, String> passwords =
-            db.hashMap("passwords", Serializer.STRING, Serializer.STRING).createOrOpen();
-    private static final ConcurrentMap<String, String> usernames =
-            db.hashMap("usernames", Serializer.STRING, Serializer.STRING).createOrOpen();
-    private static final ConcurrentMap<String, String> bios =
-            db.hashMap("bios", Serializer.STRING, Serializer.STRING).createOrOpen();
+    private final ConcurrentMap<String, String> passwords;
+    private final ConcurrentMap<String, String> usernames;
+    private final ConcurrentMap<String, String> bios;
     // skill tags stored as a single comma-separated string per user
-    private static final ConcurrentMap<String, String> skillTags =
-            db.hashMap("skillTags", Serializer.STRING, Serializer.STRING).createOrOpen();
+    private final ConcurrentMap<String, String> skillTags;
 
-    static {
-        // seed a test user on first run
+    public UserRepository() {
+        DB db = DatabaseCore.getDB();
+        passwords = db.hashMap("passwords", Serializer.STRING, Serializer.STRING).createOrOpen();
+        usernames = db.hashMap("usernames", Serializer.STRING, Serializer.STRING).createOrOpen();
+        bios = db.hashMap("bios", Serializer.STRING, Serializer.STRING).createOrOpen();
+        skillTags = db.hashMap("skillTags", Serializer.STRING, Serializer.STRING).createOrOpen();
+
+        // seed a test user on first run (only if it doesn't exist yet)
         if (!passwords.containsKey("test@unibo.it")) {
             passwords.put("test@unibo.it", "1234");
             usernames.put("test@unibo.it", "TestUser");
@@ -35,29 +37,29 @@ public class UserRepository {
         }
     }
 
-    public static boolean exists(String email) {
+    public boolean exists(String email) {
         return passwords.containsKey(email);
     }
 
-    public static boolean checkPassword(String email, String password) {
+    public boolean checkPassword(String email, String password) {
         String stored = passwords.get(email);
         return stored != null && stored.equals(password);
     }
 
-    public static void create(String email, String username, String password) {
+    public void create(String email, String username, String password) {
         passwords.put(email, password);
         usernames.put(email, username);
         DatabaseCore.commit();
     }
 
-    public static void updateProfile(String email, String bio, List<String> tags) {
+    public void updateProfile(String email, String bio, List<String> tags) {
         bios.put(email, bio == null ? "" : bio);
         skillTags.put(email, tags == null ? "" : String.join(",", tags));
         DatabaseCore.commit();
     }
 
     // Rebuilds the full User object from the separate collections
-    public static User getUser(String email) {
+    public User getUser(String email) {
         if (!usernames.containsKey(email)) {
             return null;
         }
