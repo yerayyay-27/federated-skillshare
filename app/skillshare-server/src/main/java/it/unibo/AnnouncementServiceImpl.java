@@ -44,4 +44,18 @@ public class AnnouncementServiceImpl extends RemoteServiceServlet implements Ann
     public List<Announcement> searchActiveAnnouncements(String query) {
         return announcementManager.searchActiveAnnouncements(query);
     }
+
+    @Override
+    public Announcement updateAnnouncement(
+            String ownerUsername,
+            Announcement announcement) throws IllegalArgumentException {
+        return announcementManager.updateAnnouncement(ownerUsername, announcement);
+    }
+
+    @Override
+    public boolean deleteAnnouncement(
+            String id,
+            String ownerUsername) throws IllegalArgumentException {
+        return announcementManager.deleteAnnouncement(id, ownerUsername);
+    }
 }

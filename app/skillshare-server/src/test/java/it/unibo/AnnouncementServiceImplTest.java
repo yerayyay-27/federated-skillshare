@@ -31,31 +31,27 @@ class AnnouncementServiceImplTest {
     @Test
     void createValidAnnouncement() {
         Announcement createdAnnouncement = service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
+                announcement(null, "alice", "Java tutoring", true));
 
         assertNotNull(createdAnnouncement);
-        assertEquals("announcement-1", createdAnnouncement.getId());
-        assertNotNull(service.getAnnouncementById("announcement-1"));
+        assertNotNull(createdAnnouncement.getId());
+        assertNotNull(service.getAnnouncementById(createdAnnouncement.getId()));
     }
 
     @Test
-    void rejectDuplicatedAnnouncementId() {
-        service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
+    void replaceClientSuppliedId() {
+        Announcement createdAnnouncement = service.createAnnouncement(
+                announcement("client-id", "alice", "Java tutoring", true));
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> service.createAnnouncement(
-                        announcement("announcement-1", "bob", "Piano lessons", true)));
-        assertEquals("alice", service.getAnnouncementById("announcement-1").getOwnerUsername());
+        assertFalse("client-id".equals(createdAnnouncement.getId()));
     }
 
     @Test
     void retrieveExistingAnnouncement() {
-        service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
 
-        Announcement storedAnnouncement = service.getAnnouncementById("announcement-1");
+        Announcement storedAnnouncement = service.getAnnouncementById(created.getId());
 
         assertNotNull(storedAnnouncement);
         assertEquals("Java tutoring", storedAnnouncement.getOfferedSkill());
@@ -63,65 +59,108 @@ class AnnouncementServiceImplTest {
 
     @Test
     void listOnlyActiveAnnouncements() {
-        service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
-        service.createAnnouncement(
-                announcement("announcement-2", "bob", "Piano lessons", false));
+        Announcement active = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+        Announcement inactive = service.createAnnouncement(
+                announcement(null, "bob", "Piano lessons", true));
+        service.deactivateAnnouncement(inactive.getId());
 
         List<Announcement> announcements = service.getActiveAnnouncements();
 
         assertEquals(1, announcements.size());
-        assertEquals("announcement-1", announcements.get(0).getId());
+        assertEquals(active.getId(), announcements.get(0).getId());
     }
 
     @Test
     void deactivateExistingAnnouncement() {
-        service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
 
-        boolean deactivated = service.deactivateAnnouncement("announcement-1");
+        boolean deactivated = service.deactivateAnnouncement(created.getId());
 
         assertTrue(deactivated);
-        assertFalse(service.getAnnouncementById("announcement-1").isActive());
+        assertFalse(service.getAnnouncementById(created.getId()).isActive());
     }
 
     @Test
     void searchAnnouncementsCaseInsensitively() {
-        service.createAnnouncement(
-                announcement("announcement-1", "alice", "Java tutoring", true));
-        service.createAnnouncement(new Announcement(
-                "announcement-2",
+        Announcement javaAnnouncement = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+        Announcement pianoAnnouncement = service.createAnnouncement(new Announcement(
+                null,
                 "bob",
                 "Piano lessons",
                 "Photography",
                 "Learn classical music.",
                 "Saturday mornings",
                 true));
-        service.createAnnouncement(
-                announcement("announcement-3", "carol", "Advanced Java", false));
+        Announcement inactiveAnnouncement = service.createAnnouncement(
+                announcement(null, "carol", "Advanced Java", true));
+        service.deactivateAnnouncement(inactiveAnnouncement.getId());
 
         List<Announcement> offeredSkillMatches = service.searchActiveAnnouncements("jAvA");
         List<Announcement> requestedSkillMatches = service.searchActiveAnnouncements("PHOTO");
         List<Announcement> descriptionMatches = service.searchActiveAnnouncements("classical");
 
         assertEquals(1, offeredSkillMatches.size());
-        assertEquals("announcement-1", offeredSkillMatches.get(0).getId());
+        assertEquals(javaAnnouncement.getId(), offeredSkillMatches.get(0).getId());
         assertEquals(1, requestedSkillMatches.size());
-        assertEquals("announcement-2", requestedSkillMatches.get(0).getId());
+        assertEquals(pianoAnnouncement.getId(), requestedSkillMatches.get(0).getId());
         assertEquals(1, descriptionMatches.size());
-        assertEquals("announcement-2", descriptionMatches.get(0).getId());
+        assertEquals(pianoAnnouncement.getId(), descriptionMatches.get(0).getId());
     }
 
     @Test
     void delegateValidationErrors() {
         Announcement invalidAnnouncement =
-                announcement("announcement-1", " ", "Java tutoring", true);
+                announcement(null, " ", "Java tutoring", true);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> service.createAnnouncement(invalidAnnouncement));
 
         assertEquals("Owner username must not be blank", exception.getMessage());
+    }
+
+    @Test
+    void updateAnnouncement() {
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+        created.setOfferedSkill("Advanced Java");
+
+        Announcement updated = service.updateAnnouncement("alice", created);
+
+        assertEquals("Advanced Java", updated.getOfferedSkill());
+        assertEquals(created.getId(), updated.getId());
+    }
+
+    @Test
+    void propagateInvalidUpdateError() {
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateAnnouncement("bob", created));
+    }
+
+    @Test
+    void deleteAnnouncement() {
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+
+        assertTrue(service.deleteAnnouncement(created.getId(), "alice"));
+        assertEquals(null, service.getAnnouncementById(created.getId()));
+    }
+
+    @Test
+    void propagateUnauthorizedDeletionError() {
+        Announcement created = service.createAnnouncement(
+                announcement(null, "alice", "Java tutoring", true));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.deleteAnnouncement(created.getId(), "bob"));
     }
 
     private Announcement announcement(

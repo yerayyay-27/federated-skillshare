@@ -21,15 +21,15 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 public class MarketplaceGui {
 
-    private final String currentUsername;
+    private final User currentUser;
     private final AnnouncementServiceAsync announcementService =
             GWT.create(AnnouncementService.class);
 
     private VerticalPanel announcementListPanel;
     private Label statusLabel;
 
-    public MarketplaceGui(String currentUsername) {
-        this.currentUsername = currentUsername;
+    public MarketplaceGui(User currentUser) {
+        this.currentUser = currentUser;
     }
 
     public void show() {
@@ -43,6 +43,7 @@ public class MarketplaceGui {
 
         final Button searchButton = new Button("Search");
         final Button createButton = new Button("Create announcement");
+        final Button backButton = new Button("Back to home");
         statusLabel = new Label();
         statusLabel.addStyleName("serverResponseLabelError");
         announcementListPanel = new VerticalPanel();
@@ -61,6 +62,7 @@ public class MarketplaceGui {
         mainPanel.add(title);
         mainPanel.add(searchPanel);
         mainPanel.add(createButton);
+        mainPanel.add(backButton);
         mainPanel.add(statusLabel);
         mainPanel.add(announcementListPanel);
 
@@ -87,7 +89,14 @@ public class MarketplaceGui {
         createButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                new AnnouncementFormGui(currentUsername).show();
+                new AnnouncementFormGui(currentUser).show();
+            }
+        });
+
+        backButton.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                new HomeGui(currentUser).show();
             }
         });
 
@@ -153,14 +162,28 @@ public class MarketplaceGui {
                     "Published by: " + displayValue(announcement.getOwnerUsername())));
 
             if (isOwnedByCurrentUser(announcement)) {
-                Button deactivateButton = new Button("Deactivate");
-                deactivateButton.addClickHandler(new ClickHandler() {
+                HorizontalPanel ownerActions = new HorizontalPanel();
+                ownerActions.setSpacing(6);
+
+                Button editButton = new Button("Edit");
+                editButton.addClickHandler(new ClickHandler() {
                     @Override
                     public void onClick(ClickEvent event) {
-                        deactivateAnnouncement(announcement.getId());
+                        new AnnouncementFormGui(currentUser, announcement).show();
                     }
                 });
-                announcementPanel.add(deactivateButton);
+
+                Button deleteButton = new Button("Delete");
+                deleteButton.addClickHandler(new ClickHandler() {
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        deleteAnnouncement(announcement.getId());
+                    }
+                });
+
+                ownerActions.add(editButton);
+                ownerActions.add(deleteButton);
+                announcementPanel.add(ownerActions);
             }
 
             announcementListPanel.add(announcementPanel);
@@ -168,29 +191,31 @@ public class MarketplaceGui {
     }
 
     private boolean isOwnedByCurrentUser(Announcement announcement) {
-        return currentUsername != null
-                && currentUsername.equals(announcement.getOwnerUsername());
+        return currentUser != null
+                && currentUser.getUsername() != null
+                && currentUser.getUsername().equals(announcement.getOwnerUsername());
     }
 
-    private void deactivateAnnouncement(String announcementId) {
-        statusLabel.setText("Deactivating announcement...");
-        announcementService.deactivateAnnouncement(
+    private void deleteAnnouncement(String announcementId) {
+        statusLabel.setText("Deleting announcement...");
+        announcementService.deleteAnnouncement(
                 announcementId,
+                currentUser.getUsername(),
                 new AsyncCallback<Boolean>() {
                     @Override
                     public void onFailure(Throwable caught) {
                         statusLabel.setText(
-                                errorMessage("Unable to deactivate announcement", caught));
+                                errorMessage("Unable to delete announcement", caught));
                     }
 
                     @Override
-                    public void onSuccess(Boolean deactivated) {
-                        if (Boolean.TRUE.equals(deactivated)) {
-                            Window.alert("Announcement deactivated.");
+                    public void onSuccess(Boolean deleted) {
+                        if (Boolean.TRUE.equals(deleted)) {
+                            Window.alert("Announcement deleted.");
                             loadActiveAnnouncements();
                         } else {
                             statusLabel.setText(
-                                    "The announcement could not be deactivated.");
+                                    "The announcement could not be deleted.");
                         }
                     }
                 });

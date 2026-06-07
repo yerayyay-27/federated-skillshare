@@ -106,6 +106,50 @@ class AnnouncementRepositoryTest {
         assertFalse(deactivated);
     }
 
+    @Test
+    void updateExistingAnnouncement() {
+        repository.save(announcement("announcement-1", true));
+        Announcement updatedAnnouncement = new Announcement(
+                "announcement-1",
+                "alice",
+                "Advanced Java",
+                "French conversation",
+                "Updated description.",
+                "Friday evenings",
+                true);
+
+        boolean updated = repository.update(updatedAnnouncement);
+
+        assertTrue(updated);
+        assertEquals(
+                "Advanced Java",
+                repository.findById("announcement-1").getOfferedSkill());
+    }
+
+    @Test
+    void rejectUnknownAnnouncementWhenUpdating() {
+        boolean updated = repository.update(announcement("unknown-id", true));
+
+        assertFalse(updated);
+    }
+
+    @Test
+    void deleteExistingAnnouncement() {
+        repository.save(announcement("announcement-1", true));
+
+        boolean deleted = repository.deleteById("announcement-1");
+
+        assertTrue(deleted);
+        assertEquals(null, repository.findById("announcement-1"));
+    }
+
+    @Test
+    void rejectUnknownAnnouncementWhenDeleting() {
+        boolean deleted = repository.deleteById("unknown-id");
+
+        assertFalse(deleted);
+    }
+
     private Announcement announcement(String id, boolean active) {
         return new Announcement(
                 id,

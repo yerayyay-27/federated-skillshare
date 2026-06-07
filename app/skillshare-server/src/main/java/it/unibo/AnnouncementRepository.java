@@ -48,4 +48,22 @@ public class AnnouncementRepository {
         DatabaseCore.commit();
         return true;
     }
+
+    public boolean update(Announcement announcement) {
+        boolean updated = announcements.replace(announcement.getId(), announcement) != null;
+        if (updated) {
+            DatabaseCore.commit();
+        }
+        return updated;
+    }
+
+    public boolean deleteById(String id) {
+        Announcement removedAnnouncement = announcements.remove(id);
+        if (removedAnnouncement == null) {
+            return false;
+        }
+
+        DatabaseCore.commit();
+        return true;
+    }
 }

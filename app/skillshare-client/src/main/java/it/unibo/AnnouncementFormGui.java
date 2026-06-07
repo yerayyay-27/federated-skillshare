@@ -16,37 +16,53 @@ import com.google.gwt.user.client.ui.VerticalPanel;
 
 public class AnnouncementFormGui {
 
-    private final String currentUsername;
+    private final User currentUser;
+    private final Announcement announcementToEdit;
     private final AnnouncementServiceAsync announcementService =
             GWT.create(AnnouncementService.class);
 
-    public AnnouncementFormGui(String currentUsername) {
-        this.currentUsername = currentUsername;
+    public AnnouncementFormGui(User currentUser) {
+        this(currentUser, null);
+    }
+
+    public AnnouncementFormGui(
+            User currentUser,
+            Announcement announcementToEdit) {
+        this.currentUser = currentUser;
+        this.announcementToEdit = announcementToEdit;
     }
 
     public void show() {
         RootPanel.get().clear();
 
-        HTML title = new HTML("<h1>Skillshare - Create announcement</h1>");
-        final TextBox idField = textField("Announcement ID");
+        final boolean editing = announcementToEdit != null;
+        HTML title = new HTML(editing
+                ? "<h1>Skillshare - Edit announcement</h1>"
+                : "<h1>Skillshare - Create announcement</h1>");
         final TextBox offeredSkillField = textField("Offered skill");
         final TextBox requestedSkillField = textField("Requested skill");
         final TextArea descriptionField = new TextArea();
         descriptionField.getElement().setPropertyString("placeholder", "Description");
         descriptionField.setVisibleLines(5);
         final TextBox availabilityField = textField("Availability");
-        final Button createButton = new Button("Create announcement");
+        final Button submitButton = new Button(
+                editing ? "Save changes" : "Create announcement");
         final Button backButton = new Button("Back to marketplace");
         final Label errorLabel = new Label();
         errorLabel.addStyleName("serverResponseLabelError");
+
+        if (editing) {
+            offeredSkillField.setText(announcementToEdit.getOfferedSkill());
+            requestedSkillField.setText(announcementToEdit.getRequestedSkill());
+            descriptionField.setText(announcementToEdit.getDescription());
+            availabilityField.setText(announcementToEdit.getAvailability());
+        }
 
         VerticalPanel mainPanel = new VerticalPanel();
         mainPanel.setSpacing(10);
         mainPanel.setWidth("100%");
         mainPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
         mainPanel.add(title);
-        mainPanel.add(new Label("Announcement ID"));
-        mainPanel.add(idField);
         mainPanel.add(new Label("Offered skill"));
         mainPanel.add(offeredSkillField);
         mainPanel.add(new Label("Requested skill"));
@@ -55,63 +71,99 @@ public class AnnouncementFormGui {
         mainPanel.add(descriptionField);
         mainPanel.add(new Label("Availability"));
         mainPanel.add(availabilityField);
-        mainPanel.add(createButton);
+        mainPanel.add(submitButton);
         mainPanel.add(errorLabel);
         mainPanel.add(backButton);
 
         RootPanel.get().add(mainPanel);
-        idField.setFocus(true);
+        offeredSkillField.setFocus(true);
 
-        createButton.addClickHandler(new ClickHandler() {
+        submitButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
                 errorLabel.setText("");
 
-                String id = idField.getText();
                 String offeredSkill = offeredSkillField.getText();
                 String requestedSkill = requestedSkillField.getText();
 
-                if (isBlank(id) || isBlank(offeredSkill) || isBlank(requestedSkill)) {
+                if (isBlank(offeredSkill) || isBlank(requestedSkill)) {
                     errorLabel.setText(
-                            "Announcement ID, offered skill and requested skill are required.");
+                            "Offered skill and requested skill are required.");
                     return;
                 }
 
                 Announcement announcement = new Announcement(
-                        id.trim(),
-                        currentUsername,
+                        editing ? announcementToEdit.getId() : null,
+                        currentUser.getUsername(),
                         offeredSkill.trim(),
                         requestedSkill.trim(),
                         descriptionField.getText().trim(),
                         availabilityField.getText().trim(),
-                        true);
+                        editing ? announcementToEdit.isActive() : true);
 
-                createButton.setEnabled(false);
-                announcementService.createAnnouncement(
-                        announcement,
-                        new AsyncCallback<Announcement>() {
-                            @Override
-                            public void onFailure(Throwable caught) {
-                                createButton.setEnabled(true);
-                                errorLabel.setText(
-                                        errorMessage("Unable to create announcement", caught));
-                            }
-
-                            @Override
-                            public void onSuccess(Announcement createdAnnouncement) {
-                                Window.alert("Announcement created.");
-                                new MarketplaceGui(currentUsername).show();
-                            }
-                        });
+                submitButton.setEnabled(false);
+                if (editing) {
+                    updateAnnouncement(announcement, submitButton, errorLabel);
+                } else {
+                    createAnnouncement(announcement, submitButton, errorLabel);
+                }
             }
         });
 
         backButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                new MarketplaceGui(currentUsername).show();
+                new MarketplaceGui(currentUser).show();
             }
         });
+    }
+
+    private void createAnnouncement(
+            Announcement announcement,
+            final Button submitButton,
+            final Label errorLabel) {
+        announcementService.createAnnouncement(
+                announcement,
+                new AsyncCallback<Announcement>() {
+                    @Override
+                    public void onFailure(Throwable caught) {
+                        submitButton.setEnabled(true);
+                        errorLabel.setText(
+                                errorMessage("Unable to create announcement", caught));
+                    }
+
+                    @Override
+                    public void onSuccess(Announcement createdAnnouncement) {
+                        Window.alert(
+                                "Announcement created with ID "
+                                        + createdAnnouncement.getId()
+                                        + ".");
+                        new MarketplaceGui(currentUser).show();
+                    }
+                });
+    }
+
+    private void updateAnnouncement(
+            Announcement announcement,
+            final Button submitButton,
+            final Label errorLabel) {
+        announcementService.updateAnnouncement(
+                currentUser.getUsername(),
+                announcement,
+                new AsyncCallback<Announcement>() {
+                    @Override
+                    public void onFailure(Throwable caught) {
+                        submitButton.setEnabled(true);
+                        errorLabel.setText(
+                                errorMessage("Unable to update announcement", caught));
+                    }
+
+                    @Override
+                    public void onSuccess(Announcement updatedAnnouncement) {
+                        Window.alert("Announcement updated.");
+                        new MarketplaceGui(currentUser).show();
+                    }
+                });
     }
 
     private TextBox textField(String placeholder) {

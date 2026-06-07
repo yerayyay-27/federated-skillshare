@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,24 +30,28 @@ class AnnouncementManagerTest {
 
     @Test
     void createValidAnnouncement() {
-        Announcement announcement = validAnnouncement("announcement-1");
+        Announcement announcement = validAnnouncement(null);
 
         Announcement createdAnnouncement = manager.createAnnouncement(announcement);
 
         assertEquals(announcement, createdAnnouncement);
-        assertNotNull(manager.getAnnouncementById("announcement-1"));
+        assertNotNull(createdAnnouncement.getId());
+        assertNotNull(manager.getAnnouncementById(createdAnnouncement.getId()));
     }
 
     @Test
-    void rejectBlankId() {
-        Announcement announcement = validAnnouncement(" ");
+    void replaceManuallySuppliedIdDuringCreation() {
+        Announcement announcement = validAnnouncement("client-supplied-id");
 
-        assertThrows(IllegalArgumentException.class, () -> manager.createAnnouncement(announcement));
+        Announcement createdAnnouncement = manager.createAnnouncement(announcement);
+
+        assertFalse("client-supplied-id".equals(createdAnnouncement.getId()));
+        assertNotNull(manager.getAnnouncementById(createdAnnouncement.getId()));
     }
 
     @Test
     void rejectBlankOwnerUsername() {
-        Announcement announcement = validAnnouncement("announcement-1");
+        Announcement announcement = validAnnouncement(null);
         announcement.setOwnerUsername(" ");
 
         assertThrows(IllegalArgumentException.class, () -> manager.createAnnouncement(announcement));
@@ -54,7 +59,7 @@ class AnnouncementManagerTest {
 
     @Test
     void rejectBlankOfferedSkill() {
-        Announcement announcement = validAnnouncement("announcement-1");
+        Announcement announcement = validAnnouncement(null);
         announcement.setOfferedSkill(null);
 
         assertThrows(IllegalArgumentException.class, () -> manager.createAnnouncement(announcement));
@@ -62,32 +67,35 @@ class AnnouncementManagerTest {
 
     @Test
     void rejectBlankRequestedSkill() {
-        Announcement announcement = validAnnouncement("announcement-1");
+        Announcement announcement = validAnnouncement(null);
         announcement.setRequestedSkill("");
 
         assertThrows(IllegalArgumentException.class, () -> manager.createAnnouncement(announcement));
     }
 
     @Test
-    void rejectDuplicatedId() {
-        Announcement originalAnnouncement = validAnnouncement("announcement-1");
-        Announcement duplicatedAnnouncement = validAnnouncement("announcement-1");
-        duplicatedAnnouncement.setOwnerUsername("bob");
-        duplicatedAnnouncement.setOfferedSkill("Piano lessons");
-        manager.createAnnouncement(originalAnnouncement);
+    void retryWhenGeneratedIdAlreadyExists() {
+        AnnouncementRepository repository = new AnnouncementRepository();
+        repository.save(validAnnouncement("collision-id"));
+        AtomicInteger attempts = new AtomicInteger();
+        AnnouncementManager collisionManager = new AnnouncementManager(
+                repository,
+                () -> attempts.getAndIncrement() == 0
+                        ? "collision-id"
+                        : "generated-id");
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> manager.createAnnouncement(duplicatedAnnouncement));
-        assertEquals("alice", manager.getAnnouncementById("announcement-1").getOwnerUsername());
-        assertEquals("Java tutoring", manager.getAnnouncementById("announcement-1").getOfferedSkill());
+        Announcement createdAnnouncement =
+                collisionManager.createAnnouncement(validAnnouncement(null));
+
+        assertEquals("generated-id", createdAnnouncement.getId());
+        assertNotNull(collisionManager.getAnnouncementById("generated-id"));
     }
 
     @Test
     void retrieveAnnouncementById() {
-        manager.createAnnouncement(validAnnouncement("announcement-1"));
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
 
-        Announcement announcement = manager.getAnnouncementById("announcement-1");
+        Announcement announcement = manager.getAnnouncementById(created.getId());
 
         assertNotNull(announcement);
         assertEquals("alice", announcement.getOwnerUsername());
@@ -95,33 +103,31 @@ class AnnouncementManagerTest {
 
     @Test
     void listOnlyActiveAnnouncements() {
-        Announcement activeAnnouncement = validAnnouncement("announcement-1");
-        Announcement inactiveAnnouncement = validAnnouncement("announcement-2");
-        inactiveAnnouncement.setActive(false);
-        manager.createAnnouncement(activeAnnouncement);
-        manager.createAnnouncement(inactiveAnnouncement);
+        Announcement activeAnnouncement = manager.createAnnouncement(validAnnouncement(null));
+        Announcement inactiveAnnouncement = manager.createAnnouncement(validAnnouncement(null));
+        manager.deactivateAnnouncement(inactiveAnnouncement.getId());
 
         List<Announcement> announcements = manager.getActiveAnnouncements();
 
         assertEquals(1, announcements.size());
-        assertEquals("announcement-1", announcements.get(0).getId());
+        assertEquals(activeAnnouncement.getId(), announcements.get(0).getId());
     }
 
     @Test
     void deactivateExistingAnnouncement() {
-        manager.createAnnouncement(validAnnouncement("announcement-1"));
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
 
-        boolean deactivated = manager.deactivateAnnouncement("announcement-1");
+        boolean deactivated = manager.deactivateAnnouncement(created.getId());
 
         assertTrue(deactivated);
-        assertFalse(manager.getAnnouncementById("announcement-1").isActive());
+        assertFalse(manager.getAnnouncementById(created.getId()).isActive());
     }
 
     @Test
     void searchAnnouncementsCaseInsensitively() {
-        Announcement javaAnnouncement = validAnnouncement("announcement-1");
+        Announcement javaAnnouncement = validAnnouncement(null);
         Announcement pianoAnnouncement = new Announcement(
-                "announcement-2",
+                null,
                 "bob",
                 "Piano lessons",
                 "Photography",
@@ -129,7 +135,7 @@ class AnnouncementManagerTest {
                 "Saturday mornings",
                 true);
         Announcement inactiveAnnouncement = new Announcement(
-                "announcement-3",
+                null,
                 "carol",
                 "Advanced Java",
                 "Cooking",
@@ -139,17 +145,140 @@ class AnnouncementManagerTest {
         manager.createAnnouncement(javaAnnouncement);
         manager.createAnnouncement(pianoAnnouncement);
         manager.createAnnouncement(inactiveAnnouncement);
+        manager.deactivateAnnouncement(inactiveAnnouncement.getId());
 
         List<Announcement> offeredSkillMatches = manager.searchActiveAnnouncements("jAvA");
         List<Announcement> requestedSkillMatches = manager.searchActiveAnnouncements("PHOTO");
         List<Announcement> descriptionMatches = manager.searchActiveAnnouncements("classical");
 
         assertEquals(1, offeredSkillMatches.size());
-        assertEquals("announcement-1", offeredSkillMatches.get(0).getId());
+        assertEquals(javaAnnouncement.getId(), offeredSkillMatches.get(0).getId());
         assertEquals(1, requestedSkillMatches.size());
-        assertEquals("announcement-2", requestedSkillMatches.get(0).getId());
+        assertEquals(pianoAnnouncement.getId(), requestedSkillMatches.get(0).getId());
         assertEquals(1, descriptionMatches.size());
-        assertEquals("announcement-2", descriptionMatches.get(0).getId());
+        assertEquals(pianoAnnouncement.getId(), descriptionMatches.get(0).getId());
+    }
+
+    @Test
+    void updateOwnedAnnouncementAndPreserveProtectedFields() {
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
+        manager.deactivateAnnouncement(created.getId());
+        Announcement update = new Announcement(
+                created.getId(),
+                "mallory",
+                "Advanced Java",
+                "French conversation",
+                "Updated description.",
+                "Friday evenings",
+                true);
+
+        Announcement updated = manager.updateAnnouncement("alice", update);
+
+        assertEquals(created.getId(), updated.getId());
+        assertEquals("alice", updated.getOwnerUsername());
+        assertFalse(updated.isActive());
+        assertEquals("Advanced Java", updated.getOfferedSkill());
+    }
+
+    @Test
+    void rejectUpdateFromAnotherUsername() {
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement("bob", created));
+    }
+
+    @Test
+    void rejectNullAnnouncementUpdate() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement("alice", null));
+    }
+
+    @Test
+    void rejectBlankAnnouncementIdDuringUpdate() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement(
+                        "alice",
+                        validAnnouncement(" ")));
+    }
+
+    @Test
+    void rejectBlankOwnerUsernameDuringUpdate() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement(
+                        " ",
+                        validAnnouncement("announcement-1")));
+    }
+
+    @Test
+    void rejectBlankOfferedSkillDuringUpdate() {
+        Announcement update = validAnnouncement("announcement-1");
+        update.setOfferedSkill(" ");
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement("alice", update));
+    }
+
+    @Test
+    void rejectBlankRequestedSkillDuringUpdate() {
+        Announcement update = validAnnouncement("announcement-1");
+        update.setRequestedSkill(null);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement("alice", update));
+    }
+
+    @Test
+    void rejectUnknownAnnouncementUpdate() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.updateAnnouncement(
+                        "alice",
+                        validAnnouncement("unknown-id")));
+    }
+
+    @Test
+    void deleteOwnedAnnouncement() {
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
+
+        assertTrue(manager.deleteAnnouncement(created.getId(), "alice"));
+        assertEquals(null, manager.getAnnouncementById(created.getId()));
+    }
+
+    @Test
+    void rejectDeletionFromAnotherUsername() {
+        Announcement created = manager.createAnnouncement(validAnnouncement(null));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.deleteAnnouncement(created.getId(), "bob"));
+    }
+
+    @Test
+    void rejectBlankAnnouncementIdDuringDeletion() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.deleteAnnouncement(" ", "alice"));
+    }
+
+    @Test
+    void rejectBlankOwnerUsernameDuringDeletion() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.deleteAnnouncement("announcement-1", " "));
+    }
+
+    @Test
+    void rejectUnknownAnnouncementDeletion() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> manager.deleteAnnouncement("unknown-id", "alice"));
     }
 
     private Announcement validAnnouncement(String id) {

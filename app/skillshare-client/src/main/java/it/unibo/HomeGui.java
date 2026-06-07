@@ -44,7 +44,7 @@ public class HomeGui {
         // --- Navigate to the marketplace ---
         marketplaceButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                new MarketplaceGui(currentUser.getUsername()).show();
+                new MarketplaceGui(currentUser).show();
             }
         });
 

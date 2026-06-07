@@ -24,4 +24,14 @@ public interface AnnouncementServiceAsync {
     void searchActiveAnnouncements(
             String query,
             AsyncCallback<List<Announcement>> callback);
+
+    void updateAnnouncement(
+            String ownerUsername,
+            Announcement announcement,
+            AsyncCallback<Announcement> callback);
+
+    void deleteAnnouncement(
+            String id,
+            String ownerUsername,
+            AsyncCallback<Boolean> callback);
 }

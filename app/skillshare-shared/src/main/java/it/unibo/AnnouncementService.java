@@ -17,4 +17,10 @@ public interface AnnouncementService extends RemoteService {
     boolean deactivateAnnouncement(String id);
 
     List<Announcement> searchActiveAnnouncements(String query);
+
+    Announcement updateAnnouncement(String ownerUsername, Announcement announcement)
+            throws IllegalArgumentException;
+
+    boolean deleteAnnouncement(String id, String ownerUsername)
+            throws IllegalArgumentException;
 }
