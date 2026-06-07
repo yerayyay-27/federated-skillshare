@@ -34,6 +34,16 @@
     <url-pattern>/app/auth</url-pattern>
   </servlet-mapping>
 
+  <!-- Announcements -->
+  <servlet>
+    <servlet-name>announcementServlet</servlet-name>
+    <servlet-class>it.unibo.AnnouncementServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>announcementServlet</servlet-name>
+    <url-pattern>/app/announcements</url-pattern>
+  </servlet-mapping>
+
 	<!-- Default page to serve -->
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
