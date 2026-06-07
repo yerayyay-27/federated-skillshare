@@ -23,6 +23,7 @@ public class HomeGui {
         HTML welcome = new HTML("<h2>Welcome, " + currentUser.getUsername() + "!</h2>");
         HTML info = new HTML("<p>You are signed in as <b>" + currentUser.getEmail() + "</b></p>");
 
+        final Button profileButton = new Button("My profile");
         final Button logoutButton = new Button("Sign out");
 
         VerticalPanel mainPanel = new VerticalPanel();
@@ -33,9 +34,17 @@ public class HomeGui {
         mainPanel.add(title);
         mainPanel.add(welcome);
         mainPanel.add(info);
+        mainPanel.add(profileButton);
         mainPanel.add(logoutButton);
 
         RootPanel.get().add(mainPanel);
+
+        // --- Navigate to the profile screen ---
+        profileButton.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                new ProfileGui(currentUser).show();
+            }
+        });
 
         // --- Logout: go back to the login screen ---
         logoutButton.addClickHandler(new ClickHandler() {

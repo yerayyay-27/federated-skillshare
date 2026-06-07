@@ -48,5 +48,15 @@
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
   </welcome-file-list>
+  
+  <!-- Profile management -->
+  <servlet>
+    <servlet-name>profileServlet</servlet-name>
+    <servlet-class>it.unibo.ProfileServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>profileServlet</servlet-name>
+    <url-pattern>/app/profile</url-pattern>
+  </servlet-mapping>
 
 </web-app>
