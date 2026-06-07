@@ -24,6 +24,8 @@ public class MarketplaceGui {
     private final User currentUser;
     private final AnnouncementServiceAsync announcementService =
             GWT.create(AnnouncementService.class);
+    private final ExchangeServiceAsync exchangeService =
+            GWT.create(ExchangeService.class);
 
     private VerticalPanel announcementListPanel;
     private Label statusLabel;
@@ -184,6 +186,15 @@ public class MarketplaceGui {
                 ownerActions.add(editButton);
                 ownerActions.add(deleteButton);
                 announcementPanel.add(ownerActions);
+            } else {
+                Button requestButton = new Button("Request exchange");
+                requestButton.addClickHandler(new ClickHandler() {
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        requestExchange(announcement.getId());
+                    }
+                });
+                announcementPanel.add(requestButton);
             }
 
             announcementListPanel.add(announcementPanel);
@@ -217,6 +228,24 @@ public class MarketplaceGui {
                             statusLabel.setText(
                                     "The announcement could not be deleted.");
                         }
+                    }
+                });
+    }
+
+    private void requestExchange(String announcementId) {
+        String message = Window.prompt("Optional message for the owner:", "");
+        statusLabel.setText("Sending request...");
+        exchangeService.createRequest(announcementId, currentUser.getUsername(), message,
+                new AsyncCallback<ExchangeRequest>() {
+                    @Override
+                    public void onFailure(Throwable caught) {
+                        statusLabel.setText(errorMessage("Unable to send request", caught));
+                    }
+
+                    @Override
+                    public void onSuccess(ExchangeRequest request) {
+                        Window.alert("Request sent.");
+                        statusLabel.setText("");
                     }
                 });
     }

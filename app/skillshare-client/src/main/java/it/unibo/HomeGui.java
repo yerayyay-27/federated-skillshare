@@ -26,6 +26,7 @@ public class HomeGui {
         final Button marketplaceButton = new Button("Open marketplace");
         final Button profileButton = new Button("My profile");
         final Button logoutButton = new Button("Sign out");
+        final Button exchangeButton = new Button("My exchange requests");
 
         VerticalPanel mainPanel = new VerticalPanel();
         mainPanel.setSpacing(10);
@@ -38,6 +39,7 @@ public class HomeGui {
         mainPanel.add(marketplaceButton);
         mainPanel.add(profileButton);
         mainPanel.add(logoutButton);
+        mainPanel.add(exchangeButton);
 
         RootPanel.get().add(mainPanel);
 
@@ -59,6 +61,12 @@ public class HomeGui {
         logoutButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
                 new LoginGui().show();
+            }
+        });
+        
+        exchangeButton.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                new ExchangeRequestsGui(currentUser).show();
             }
         });
     }

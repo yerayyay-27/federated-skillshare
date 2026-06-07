@@ -59,4 +59,14 @@
     <url-pattern>/app/profile</url-pattern>
   </servlet-mapping>
 
+  <!-- Exchange requests -->
+  <servlet>
+    <servlet-name>exchangeServlet</servlet-name>
+    <servlet-class>it.unibo.ExchangeServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>exchangeServlet</servlet-name>
+    <url-pattern>/app/exchanges</url-pattern>
+  </servlet-mapping>
+
 </web-app>
