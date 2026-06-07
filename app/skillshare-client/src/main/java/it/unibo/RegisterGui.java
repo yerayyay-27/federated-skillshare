@@ -17,23 +17,26 @@ import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
-public class LoginGui {
+public class RegisterGui {
 
     private final AuthServiceAsync authService = GWT.create(AuthService.class);
 
     public void show() {
         RootPanel.get().clear();
 
-        HTML title = new HTML("<h1>Skillshare - Login</h1>");
+        HTML title = new HTML("<h1>Skillshare - Sign up</h1>");
+
+        final TextBox usernameField = new TextBox();
+        usernameField.getElement().setPropertyString("placeholder", "Username");
 
         final TextBox emailField = new TextBox();
         emailField.getElement().setPropertyString("placeholder", "Email");
 
         final PasswordTextBox passwordField = new PasswordTextBox();
-        passwordField.getElement().setPropertyString("placeholder", "Password");
+        passwordField.getElement().setPropertyString("placeholder", "Password (min. 4 characters)");
 
-        final Button loginButton = new Button("Sign in");
-        final Button goToRegisterButton = new Button("Don't have an account? Sign up");
+        final Button registerButton = new Button("Create account");
+        final Button backToLoginButton = new Button("Already have an account? Sign in");
         final Label errorLabel = new Label();
         errorLabel.addStyleName("serverResponseLabelError");
 
@@ -43,62 +46,63 @@ public class LoginGui {
         mainPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
 
         mainPanel.add(title);
-        mainPanel.add(new HTML("<b>Enter your credentials:</b>"));
+        mainPanel.add(new HTML("<b>Fill in your details:</b>"));
+        mainPanel.add(usernameField);
         mainPanel.add(emailField);
         mainPanel.add(passwordField);
-        mainPanel.add(loginButton);
+        mainPanel.add(registerButton);
         mainPanel.add(errorLabel);
-        mainPanel.add(goToRegisterButton);
+        mainPanel.add(backToLoginButton);
 
         RootPanel.get().add(mainPanel);
-        emailField.setFocus(true);
+        usernameField.setFocus(true);
 
-        // --- Login handler ---
-        class LoginHandler implements ClickHandler, KeyUpHandler {
+        // --- Registration handler ---
+        class RegisterHandler implements ClickHandler, KeyUpHandler {
             public void onClick(ClickEvent event) {
-                doLogin();
+                doRegister();
             }
             public void onKeyUp(KeyUpEvent event) {
                 if (event.getNativeKeyCode() == KeyCodes.KEY_ENTER) {
-                    doLogin();
+                    doRegister();
                 }
             }
-            private void doLogin() {
+            private void doRegister() {
                 errorLabel.setText("");
+                String username = usernameField.getText();
                 String email = emailField.getText();
                 String password = passwordField.getText();
 
-                if (email.trim().isEmpty() || password.isEmpty()) {
-                    errorLabel.setText("Please fill in email and password");
+                if (username.trim().isEmpty() || email.trim().isEmpty() || password.isEmpty()) {
+                    errorLabel.setText("Please fill in all fields");
                     return;
                 }
 
-                loginButton.setEnabled(false);
+                registerButton.setEnabled(false);
 
-                authService.login(email, password, new AsyncCallback<User>() {
+                authService.register(username, email, password, new AsyncCallback<User>() {
                     public void onFailure(Throwable caught) {
-                        loginButton.setEnabled(true);
+                        registerButton.setEnabled(true);
                         errorLabel.setText(caught.getMessage());
                     }
                     public void onSuccess(User user) {
-                        loginButton.setEnabled(true);
-                        // Login successful: this is where you move to the next screen.
-                        // Once you have the marketplace, replace with:
-                        // new MarketplaceGui(user).show();
-                        Window.alert("Welcome " + user.getUsername() + "!");
+                        // Registration successful: go back to the login screen
+                        Window.alert("Account created for " + user.getUsername()
+                                + "! Please sign in.");
+                        new LoginGui().show();
                     }
                 });
             }
         }
 
-        LoginHandler handler = new LoginHandler();
-        loginButton.addClickHandler(handler);
+        RegisterHandler handler = new RegisterHandler();
+        registerButton.addClickHandler(handler);
         passwordField.addKeyUpHandler(handler);
 
-        // --- Navigation to the registration screen ---
-        goToRegisterButton.addClickHandler(new ClickHandler() {
+        // --- Navigation back to the login screen ---
+        backToLoginButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                new RegisterGui().show();   
+                new LoginGui().show();
             }
         });
     }

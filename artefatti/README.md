@@ -1,7 +1,9 @@
 Qui andranno inseriti tutti gli artefatti come: manuale sviluppatore, manualte utente, diaro del progetto, ecc...
 
 Diario del progetto:
-06/06/2026- Today we decided the task of each member, and started deciding the design of the project.
+06/06/2026 - Today we decided the task of each member, and started deciding the design of the project.
 
 Implemented the user authentication (login) feature as a complete end-to-end RPC slice, covering the "Access & Registration" part of Identity & Profile Management. On the shared module we defined the User data object and the AuthService/AuthServiceAsync interfaces; on the server we added AuthServiceImpl with temporary in-memory user storage and a seeded test account, registered as authServlet (/app/auth) in web.xml; and on the client we built the LoginGui screen and updated App.java to load it as the entry point. During testing the server returned HTTP 503 because the servlet failed to deploy on Jetty 12/Jakarta: the cause was extending the legacy javax-based RemoteServiceServlet, which we fixed by switching to the Jakarta variant (com.google.gwt.user.server.rpc.jakarta.RemoteServiceServlet), establishing the convention that all server-side *Impl classes must use it. Finally, we standardized the new code to English across identifiers, comments, and user-facing messages.
 
+07/06/2026 - 
+Implemented the user registration screen (RegisterGui) on the client, completing the authentication flow started with the login feature. The new screen collects username, email, and password, validates that no field is empty, and calls the existing register method on AuthService via RPC; on success it notifies the user and redirects to the login screen, and on failure it displays the server-side error message (e.g. duplicate email or password too short). We also enabled the navigation link in LoginGui so the "Sign up" button now opens RegisterGui, giving a complete two-way flow between login and registration. This closes the "Access & Registration" part of Identity & Profile Management at the UI level; user data is still stored in memory on the server, with database persistence (MapDB) planned as a later step.
