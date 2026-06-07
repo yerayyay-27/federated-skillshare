@@ -23,6 +23,7 @@ public class HomeGui {
         HTML welcome = new HTML("<h2>Welcome, " + currentUser.getUsername() + "!</h2>");
         HTML info = new HTML("<p>You are signed in as <b>" + currentUser.getEmail() + "</b></p>");
 
+        final Button marketplaceButton = new Button("Open marketplace");
         final Button profileButton = new Button("My profile");
         final Button logoutButton = new Button("Sign out");
 
@@ -34,10 +35,18 @@ public class HomeGui {
         mainPanel.add(title);
         mainPanel.add(welcome);
         mainPanel.add(info);
+        mainPanel.add(marketplaceButton);
         mainPanel.add(profileButton);
         mainPanel.add(logoutButton);
 
         RootPanel.get().add(mainPanel);
+
+        // --- Navigate to the marketplace ---
+        marketplaceButton.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                new MarketplaceGui(currentUser.getUsername()).show();
+            }
+        });
 
         // --- Navigate to the profile screen ---
         profileButton.addClickHandler(new ClickHandler() {
