@@ -1,20 +1,32 @@
 package it.unibo;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
+
+import org.mapdb.DB;
+import org.mapdb.Serializer;
 
 import com.google.gwt.user.server.rpc.jakarta.RemoteServiceServlet;
 
 @SuppressWarnings("serial")
 public class AuthServiceImpl extends RemoteServiceServlet implements AuthService {
 
-    // In-memory storage (temporary, until a database is added)
-    // key = email, value = [password, username]
-    private final Map<String, String[]> users = new HashMap<String, String[]>();
+    private static final DB db = DatabaseCore.getDB();
 
-    public AuthServiceImpl() {
-        // test user to try the login right away
-        users.put("test@unibo.it", new String[] { "1234", "TestUser" });
+    // Persistent storage: email -> password
+    private static final ConcurrentMap<String, String> passwords =
+            db.hashMap("passwords", Serializer.STRING, Serializer.STRING).createOrOpen();
+
+    // Persistent storage: email -> username
+    private static final ConcurrentMap<String, String> usernames =
+            db.hashMap("usernames", Serializer.STRING, Serializer.STRING).createOrOpen();
+
+    // Seed a test user on first run (only if it doesn't exist yet)
+    static {
+        if (!passwords.containsKey("test@unibo.it")) {
+            passwords.put("test@unibo.it", "1234");
+            usernames.put("test@unibo.it", "TestUser");
+            DatabaseCore.commit();
+        }
     }
 
     @Override
@@ -23,11 +35,12 @@ public class AuthServiceImpl extends RemoteServiceServlet implements AuthService
                 || email.trim().isEmpty() || password.isEmpty()) {
             throw new IllegalArgumentException("Email and password are required");
         }
-        String[] userData = users.get(email.trim());
-        if (userData == null || !userData[0].equals(password)) {
+        String key = email.trim();
+        String storedPassword = passwords.get(key);
+        if (storedPassword == null || !storedPassword.equals(password)) {
             throw new IllegalArgumentException("Wrong email or password");
         }
-        return new User(userData[1], email.trim());
+        return new User(usernames.get(key), key);
     }
 
     @Override
@@ -39,10 +52,14 @@ public class AuthServiceImpl extends RemoteServiceServlet implements AuthService
             throw new IllegalArgumentException(
                 "Invalid data: the password must be at least 4 characters long");
         }
-        if (users.containsKey(email.trim())) {
+        String key = email.trim();
+        if (passwords.containsKey(key)) {
             throw new IllegalArgumentException("A user with this email already exists");
         }
-        users.put(email.trim(), new String[] { password, username.trim() });
-        return new User(username.trim(), email.trim());
+        passwords.put(key, password);
+        usernames.put(key, username.trim());
+        // Persist the changes to disk
+        DatabaseCore.commit();
+        return new User(username.trim(), key);
     }
 }
