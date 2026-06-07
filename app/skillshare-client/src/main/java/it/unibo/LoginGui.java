@@ -6,7 +6,6 @@ import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.event.dom.client.KeyCodes;
 import com.google.gwt.event.dom.client.KeyUpEvent;
 import com.google.gwt.event.dom.client.KeyUpHandler;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.HTML;
@@ -82,10 +81,8 @@ public class LoginGui {
                     }
                     public void onSuccess(User user) {
                         loginButton.setEnabled(true);
-                        // Login successful: this is where you move to the next screen.
-                        // Once you have the marketplace, replace with:
-                        // new MarketplaceGui(user).show();
-                        Window.alert("Welcome " + user.getUsername() + "!");
+                        // Login successful: move to the home screen, passing the logged-in user
+                        new HomeGui(user).show();
                     }
                 });
             }
