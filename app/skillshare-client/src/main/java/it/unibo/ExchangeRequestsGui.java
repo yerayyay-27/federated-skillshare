@@ -5,7 +5,6 @@ import java.util.List;
 import com.google.gwt.core.client.GWT;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.HTML;
@@ -121,6 +120,8 @@ public class ExchangeRequestsGui {
                 });
                 card.add(acceptButton);
                 card.add(rejectButton);
+            } else if (ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
+                card.add(chatButton(request));
             }
             receivedPanel.add(card);
         }
@@ -132,14 +133,28 @@ public class ExchangeRequestsGui {
             sentPanel.add(new Label("No sent requests."));
             return;
         }
-        for (ExchangeRequest request : requests) {
+        for (final ExchangeRequest request : requests) {
             VerticalPanel card = new VerticalPanel();
             card.setSpacing(4);
             card.add(new Label("To: " + request.getToUsername()));
             card.add(new Label("Skill: " + request.getAnnouncementOfferedSkill()));
             card.add(new Label("Status: " + request.getStatus()));
+
+            if (ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
+                card.add(chatButton(request));
+            }
             sentPanel.add(card);
         }
+    }
+
+    private Button chatButton(final ExchangeRequest request) {
+        Button openChatButton = new Button("Open chat");
+        openChatButton.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                new ChatGui(currentUser, request).show();
+            }
+        });
+        return openChatButton;
     }
 
     private void respond(String requestId, final boolean accept) {

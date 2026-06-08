@@ -69,4 +69,14 @@
     <url-pattern>/app/exchanges</url-pattern>
   </servlet-mapping>
 
+  <!-- Internal chat -->
+  <servlet>
+    <servlet-name>chatServlet</servlet-name>
+    <servlet-class>it.unibo.ChatServiceImpl</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>chatServlet</servlet-name>
+    <url-pattern>/app/chat</url-pattern>
+  </servlet-mapping>
+
 </web-app>
