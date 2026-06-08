@@ -9,10 +9,12 @@ public class User implements Serializable {
     private String email;
     private String bio;
     private List<String> skillTags;
+    private String photo; // base64 data URL, empty if none
 
     public User() { // required for GWT serialization
         this.bio = "";
         this.skillTags = new ArrayList<String>();
+        this.photo = "";
     }
 
     public User(String username, String email) {
@@ -29,4 +31,7 @@ public class User implements Serializable {
 
     public List<String> getSkillTags() { return skillTags; }
     public void setSkillTags(List<String> skillTags) { this.skillTags = skillTags; }
+
+    public String getPhoto() { return photo; }
+    public void setPhoto(String photo) { this.photo = photo; }
 }

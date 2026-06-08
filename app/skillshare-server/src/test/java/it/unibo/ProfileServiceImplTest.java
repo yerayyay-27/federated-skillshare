@@ -70,4 +70,23 @@ class ProfileServiceImplTest {
         assertEquals("", updated.getBio());
         assertTrue(updated.getSkillTags().isEmpty());
     }
+
+    @Test
+    void updatePhotoStoresDataUrl() {
+        String dataUrl = "data:image/png;base64,AAAA";
+        User updated = service.updatePhoto("alice@unibo.it", dataUrl);
+        assertEquals(dataUrl, updated.getPhoto());
+    }
+
+    @Test
+    void rejectNonImagePhoto() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updatePhoto("alice@unibo.it", "not-an-image"));
+    }
+
+    @Test
+    void rejectUnknownUserPhoto() {
+        assertThrows(IllegalArgumentException.class,
+                () -> service.updatePhoto("ghost@unibo.it", "data:image/png;base64,AAAA"));
+    }
 }

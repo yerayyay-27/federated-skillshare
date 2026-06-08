@@ -8,8 +8,10 @@ import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
+import com.google.gwt.user.client.ui.FileUpload;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HasHorizontalAlignment;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.RootPanel;
 import com.google.gwt.user.client.ui.TextArea;
@@ -32,6 +34,16 @@ public class ProfileGui {
         HTML info = new HTML("<p><b>" + currentUser.getUsername()
                 + "</b> (" + currentUser.getEmail() + ")</p>");
 
+        // --- Photo section ---
+        final Image photoPreview = new Image();
+        photoPreview.setWidth("120px");
+        showPhoto(photoPreview, currentUser.getPhoto());
+
+        final FileUpload fileUpload = new FileUpload();
+        final Button uploadButton = new Button("Upload photo");
+        final Label photoStatus = new Label();
+
+        // --- Bio & tags ---
         final TextArea bioField = new TextArea();
         bioField.setCharacterWidth(40);
         bioField.setVisibleLines(4);
@@ -54,6 +66,11 @@ public class ProfileGui {
 
         mainPanel.add(title);
         mainPanel.add(info);
+        mainPanel.add(new HTML("<b>Profile photo:</b>"));
+        mainPanel.add(photoPreview);
+        mainPanel.add(fileUpload);
+        mainPanel.add(uploadButton);
+        mainPanel.add(photoStatus);
         mainPanel.add(new HTML("<b>Bio:</b>"));
         mainPanel.add(bioField);
         mainPanel.add(new HTML("<b>Skill tags (comma-separated):</b>"));
@@ -64,7 +81,22 @@ public class ProfileGui {
 
         RootPanel.get().add(mainPanel);
 
-        // --- Save handler ---
+        // --- Upload handler ---
+        uploadButton.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                photoStatus.setText("Reading image...");
+                ImageReader.readAsDataUrl(fileUpload.getElement(), new ImageReadCallback() {
+                    public void onRead(String dataUrl) {
+                        uploadPhoto(dataUrl, photoPreview, photoStatus, uploadButton);
+                    }
+                    public void onError(String message) {
+                        photoStatus.setText(message);
+                    }
+                });
+            }
+        });
+
+        // --- Save handler (bio & tags) ---
         saveButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
                 statusLabel.setText("");
@@ -80,7 +112,6 @@ public class ProfileGui {
                             }
                             public void onSuccess(User updated) {
                                 saveButton.setEnabled(true);
-                                // keep the local user object in sync
                                 currentUser.setBio(bio);
                                 currentUser.setSkillTags(tags);
                                 statusLabel.setText("Profile saved!");
@@ -95,6 +126,35 @@ public class ProfileGui {
                 new HomeGui(currentUser).show();
             }
         });
+    }
+
+    private void uploadPhoto(final String dataUrl, final Image preview,
+            final Label status, final Button button) {
+        button.setEnabled(false);
+        status.setText("Uploading...");
+        profileService.updatePhoto(currentUser.getEmail(), dataUrl,
+                new AsyncCallback<User>() {
+                    public void onFailure(Throwable caught) {
+                        button.setEnabled(true);
+                        status.setText("Error: " + caught.getMessage());
+                    }
+                    public void onSuccess(User updated) {
+                        button.setEnabled(true);
+                        currentUser.setPhoto(dataUrl);
+                        showPhoto(preview, dataUrl);
+                        status.setText("Photo updated!");
+                    }
+                });
+    }
+
+    // Sets the <img> src directly so base64 data URLs render correctly
+    private void showPhoto(Image img, String dataUrl) {
+        if (dataUrl != null && !dataUrl.isEmpty()) {
+            img.getElement().setAttribute("src", dataUrl);
+            img.setVisible(true);
+        } else {
+            img.setVisible(false);
+        }
     }
 
     // "Java, Guitar" -> ["Java", "Guitar"], ignoring empty entries
