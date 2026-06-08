@@ -21,6 +21,8 @@ public class UserRepository {
     private final ConcurrentMap<String, String> bios;
     // skill tags stored as a single comma-separated string per user
     private final ConcurrentMap<String, String> skillTags;
+    // profile photo stored as a base64 data URL per user
+    private final ConcurrentMap<String, String> photos;
 
     public UserRepository() {
         DB db = DatabaseCore.getDB();
@@ -28,6 +30,7 @@ public class UserRepository {
         usernames = db.hashMap("usernames", Serializer.STRING, Serializer.STRING).createOrOpen();
         bios = db.hashMap("bios", Serializer.STRING, Serializer.STRING).createOrOpen();
         skillTags = db.hashMap("skillTags", Serializer.STRING, Serializer.STRING).createOrOpen();
+        photos = db.hashMap("photos", Serializer.STRING, Serializer.STRING).createOrOpen();
 
         // seed a test user on first run (only if it doesn't exist yet)
         if (!passwords.containsKey("test@unibo.it")) {
@@ -58,6 +61,11 @@ public class UserRepository {
         DatabaseCore.commit();
     }
 
+    public void updatePhoto(String email, String photo) {
+        photos.put(email, photo == null ? "" : photo);
+        DatabaseCore.commit();
+    }
+
     // Rebuilds the full User object from the separate collections
     public User getUser(String email) {
         if (!usernames.containsKey(email)) {
@@ -70,6 +78,8 @@ public class UserRepository {
         if (tags != null && !tags.isEmpty()) {
             user.setSkillTags(new ArrayList<String>(Arrays.asList(tags.split(","))));
         }
+        String photo = photos.get(email);
+        user.setPhoto(photo == null ? "" : photo);
         return user;
     }
 }

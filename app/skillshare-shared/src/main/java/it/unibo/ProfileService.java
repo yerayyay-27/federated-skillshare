@@ -9,4 +9,6 @@ import com.google.gwt.user.client.rpc.RemoteServiceRelativePath;
 public interface ProfileService extends RemoteService {
     User updateProfile(String email, String bio, List<String> skillTags)
             throws IllegalArgumentException;
+
+    User updatePhoto(String email, String photo) throws IllegalArgumentException;
 }
