@@ -122,6 +122,7 @@ public class ExchangeRequestsGui {
                 card.add(rejectButton);
             } else if (ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
                 card.add(chatButton(request));
+                card.add(reviewButton(request));
             }
             receivedPanel.add(card);
         }
@@ -142,6 +143,7 @@ public class ExchangeRequestsGui {
 
             if (ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
                 card.add(chatButton(request));
+                card.add(reviewButton(request));
             }
             sentPanel.add(card);
         }
@@ -155,6 +157,16 @@ public class ExchangeRequestsGui {
             }
         });
         return openChatButton;
+    }
+
+    private Button reviewButton(final ExchangeRequest request) {
+        Button button = new Button("Leave a review");
+        button.addClickHandler(new ClickHandler() {
+            public void onClick(ClickEvent event) {
+                new ReviewGui(currentUser, request).show();
+            }
+        });
+        return button;
     }
 
     private void respond(String requestId, final boolean accept) {
