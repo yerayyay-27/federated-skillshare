@@ -9,5 +9,6 @@ public interface ReviewServiceAsync {
 
     void getReputation(String username, AsyncCallback<UserReputation> callback);
 
-    void canReview(String exchangeRequestId, String fromUsername, AsyncCallback<Boolean> callback);
+    void getReviewBlockReason(String exchangeRequestId, String fromUsername,
+            AsyncCallback<String> callback);
 }

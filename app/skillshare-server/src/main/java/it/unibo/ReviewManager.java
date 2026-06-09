@@ -62,14 +62,22 @@ public class ReviewManager {
         return new UserReputation(username, average, count, received);
     }
 
-    public boolean canReview(String exchangeRequestId, String fromUsername) {
+    // Returns null if the user can review, otherwise a human-readable reason why not.
+    public String getReviewBlockReason(String exchangeRequestId, String fromUsername) {
         ExchangeRequest request = exchangeRepository.findById(exchangeRequestId);
-        if (request == null
-                || !ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())
-                || !isParticipant(request, fromUsername)) {
-            return false;
+        if (request == null) {
+            return "This exchange no longer exists.";
         }
-        return !reviewRepository.existsForExchangeFrom(exchangeRequestId, fromUsername);
+        if (!ExchangeRequest.STATUS_ACCEPTED.equals(request.getStatus())) {
+            return "You can only review an accepted exchange.";
+        }
+        if (!isParticipant(request, fromUsername)) {
+            return "You are not a participant of this exchange.";
+        }
+        if (reviewRepository.existsForExchangeFrom(exchangeRequestId, fromUsername)) {
+            return "You have already reviewed this exchange. You can only leave one review per exchange.";
+        }
+        return null; // can review
     }
 
     // Validates the exchange is accepted and the reviewer is a participant,

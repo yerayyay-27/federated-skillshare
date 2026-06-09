@@ -31,6 +31,8 @@ public class ReviewGui {
         String target = otherParticipant();
         HTML title = new HTML("<h1>Skillshare - Leave a review</h1>");
         HTML subtitle = new HTML("<p>Reviewing <b>" + target + "</b></p>");
+        final Label statusLabel = new Label();
+        statusLabel.addStyleName("serverResponseLabelError");
 
         final ListBox ratingBox = new ListBox();
         for (int i = 5; i >= 1; i--) {
@@ -44,8 +46,15 @@ public class ReviewGui {
 
         final Button submitButton = new Button("Submit review");
         final Button backButton = new Button("Back to requests");
-        final Label statusLabel = new Label();
-        statusLabel.addStyleName("serverResponseLabelError");
+
+        final VerticalPanel formPanel = new VerticalPanel();
+        formPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
+        formPanel.setSpacing(10);
+        formPanel.add(new HTML("<b>Rating:</b>"));
+        formPanel.add(ratingBox);
+        formPanel.add(new HTML("<b>Comment:</b>"));
+        formPanel.add(commentField);
+        formPanel.add(submitButton);
 
         VerticalPanel mainPanel = new VerticalPanel();
         mainPanel.setSpacing(10);
@@ -53,15 +62,31 @@ public class ReviewGui {
         mainPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
         mainPanel.add(title);
         mainPanel.add(subtitle);
-        mainPanel.add(new HTML("<b>Rating:</b>"));
-        mainPanel.add(ratingBox);
-        mainPanel.add(new HTML("<b>Comment:</b>"));
-        mainPanel.add(commentField);
-        mainPanel.add(submitButton);
         mainPanel.add(statusLabel);
+        mainPanel.add(formPanel);
         mainPanel.add(backButton);
 
         RootPanel.get().add(mainPanel);
+
+        // The form starts hidden until we confirm the user is allowed to review
+        formPanel.setVisible(false);
+        statusLabel.setText("Checking...");
+
+        reviewService.getReviewBlockReason(exchangeRequest.getId(), currentUser.getUsername(),
+                new AsyncCallback<String>() {
+                    public void onFailure(Throwable caught) {
+                        statusLabel.setText("Error: " + caught.getMessage());
+                    }
+                    public void onSuccess(String reason) {
+                        if (reason != null && !reason.isEmpty()) {
+                            // Not allowed: explain why and keep the form hidden
+                            statusLabel.setText(reason);
+                        } else {
+                            statusLabel.setText("");
+                            formPanel.setVisible(true);
+                        }
+                    }
+                });
 
         submitButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {

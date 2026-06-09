@@ -2,6 +2,8 @@ package it.unibo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -104,14 +106,13 @@ class ReviewManagerTest {
     }
 
     @Test
-    void canReviewTrueForParticipantWithoutReview() {
-        assertTrue(manager.canReview("ex-1", "bob"));
+    void noBlockReasonForParticipantWithoutReview() {
+        assertNull(manager.getReviewBlockReason("ex-1", "bob"));
     }
 
     @Test
-    void canReviewFalseAfterReviewing() {
+    void blockReasonAfterReviewing() {
         manager.createReview("ex-1", "bob", 5, "x");
-
-        assertFalse(manager.canReview("ex-1", "bob"));
+        assertNotNull(manager.getReviewBlockReason("ex-1", "bob"));
     }
 }
