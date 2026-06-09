@@ -30,7 +30,7 @@ public class ReviewServiceImpl extends RemoteServiceServlet implements ReviewSer
     }
 
     @Override
-    public boolean canReview(String exchangeRequestId, String fromUsername) {
-        return reviewManager.canReview(exchangeRequestId, fromUsername);
+    public String getReviewBlockReason(String exchangeRequestId, String fromUsername) {
+        return reviewManager.getReviewBlockReason(exchangeRequestId, fromUsername);
     }
 }

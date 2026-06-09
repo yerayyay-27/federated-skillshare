@@ -11,5 +11,5 @@ public interface ReviewService extends RemoteService {
 
     UserReputation getReputation(String username);
 
-    boolean canReview(String exchangeRequestId, String fromUsername);
+    String getReviewBlockReason(String exchangeRequestId, String fromUsername);
 }
