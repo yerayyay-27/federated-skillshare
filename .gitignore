@@ -39,4 +39,3 @@ dockerdata/
 # --- Sistema Operativo ---
 Thumbs.db
 .DS_Store
-app/progetto_sweng.db
