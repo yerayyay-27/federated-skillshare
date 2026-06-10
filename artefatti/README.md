@@ -32,3 +32,7 @@ Profile photo: extended the user profile with persistent photo upload and previe
 09/06/2026 
  
 Review flow — replaced the generic 500 on a second review with a clear explanation. Swapped the boolean canReview for getReviewBlockReason, which returns a human-readable reason (already reviewed, not accepted, not a participant, exchange gone) or null when allowed. ReviewGui now checks this on load and, if blocked, shows the reason and hides the form so the user can't attempt a disallowed review. Updated ReviewService/Async and ReviewServiceImpl, and adjusted the ReviewManager tests.
+
+Demo database setup — prepared the persistent MapDB database for delivery testing. Temporarily removed the local database file from .gitignore.
+
+Docker-based demo environment — used Docker Desktop to run the application in a reproducible local environment and preserve a realistic test dataset. Populated the persistent MapDB database with two demo users and progressively exercised the main workflows through the web interface, including authentication, profile setup, announcements, exchange requests, chat interactions, and reviews. This allowed us to verify that the application state is preserved across executions and provided a representative dataset for future validation and the final delivery.
