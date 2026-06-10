@@ -1,6 +1,4 @@
-Qui andranno inseriti tutti gli artefatti come: manuale sviluppatore, manualte utente, diaro del progetto, ecc...
-
-Diario del progetto:
+Project Diary:
 06/06/2026 — Defined each member's tasks and started the project design.
 
 Authentication (login): end-to-end RPC slice for "Access & Registration". Added the shared User object and AuthService/AuthServiceAsync, the server-side AuthServiceImpl (authServlet at /app/auth), the LoginGui screen, and set it as the entry point. Fixed an HTTP 503 caused by extending the legacy javax RemoteServiceServlet instead of the Jakarta variant — now a project-wide convention. Codebase standardized to English.
