@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 660" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1000" height="660" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="500" y="40" text-anchor="middle" font-size="22" font-weight="bold" fill="#1a3a5c">Use Case Diagram — Skillshare</text>
+
+  <!-- System boundary -->
+  <rect x="320" y="80" width="620" height="520" rx="12" fill="#f5f9ff" stroke="#1a73e8" stroke-width="2"/>
+  <text x="630" y="105" text-anchor="middle" font-size="16" font-weight="bold" fill="#1a73e8">Skillshare</text>
+
+  <!-- Association lines (drawn first, behind nodes) -->
+  <g stroke="#9aa5b1" stroke-width="1.5">
+    <!-- Visitor -->
+    <line x1="110" y1="165" x2="360" y2="130"/>
+    <line x1="110" y1="165" x2="660" y2="130"/>
+    <!-- Registered User -->
+    <line x1="110" y1="415" x2="360" y2="210"/>
+    <line x1="110" y1="415" x2="660" y2="210"/>
+    <line x1="110" y1="415" x2="360" y2="290"/>
+    <line x1="110" y1="415" x2="660" y2="290"/>
+    <line x1="110" y1="415" x2="360" y2="370"/>
+    <line x1="110" y1="415" x2="660" y2="370"/>
+    <line x1="110" y1="415" x2="360" y2="450"/>
+    <line x1="110" y1="415" x2="660" y2="450"/>
+    <line x1="110" y1="415" x2="360" y2="530"/>
+    <line x1="110" y1="415" x2="660" y2="530"/>
+  </g>
+
+  <!-- Actor: Visitor -->
+  <g stroke="#333333" stroke-width="2" fill="none">
+    <circle cx="70" cy="150" r="14" fill="#ffffff"/>
+    <line x1="70" y1="164" x2="70" y2="198"/>
+    <line x1="46" y1="178" x2="94" y2="178"/>
+    <line x1="70" y1="198" x2="54" y2="222"/>
+    <line x1="70" y1="198" x2="86" y2="222"/>
+  </g>
+  <text x="70" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a3a5c">Visitor</text>
+
+  <!-- Actor: Registered User -->
+  <g stroke="#333333" stroke-width="2" fill="none">
+    <circle cx="70" cy="400" r="14" fill="#ffffff"/>
+    <line x1="70" y1="414" x2="70" y2="448"/>
+    <line x1="46" y1="428" x2="94" y2="428"/>
+    <line x1="70" y1="448" x2="54" y2="472"/>
+    <line x1="70" y1="448" x2="86" y2="472"/>
+  </g>
+  <text x="70" y="495" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a3a5c">Registered</text>
+  <text x="70" y="513" text-anchor="middle" font-size="14" font-weight="bold" fill="#1a3a5c">User</text>
+
+  <!-- Use cases -->
+  <g font-size="13" fill="#1a3a5c" text-anchor="middle">
+    <!-- Row 1 -->
+    <ellipse cx="475" cy="130" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="135">Register</text>
+    <ellipse cx="775" cy="130" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="135">Log in</text>
+
+    <!-- Row 2 -->
+    <ellipse cx="475" cy="210" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="215">Manage profile</text>
+    <ellipse cx="775" cy="210" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="215">Browse &amp; search marketplace</text>
+
+    <!-- Row 3 -->
+    <ellipse cx="475" cy="290" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="295">Publish announcement</text>
+    <ellipse cx="775" cy="290" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="295">Manage own announcements</text>
+
+    <!-- Row 4 -->
+    <ellipse cx="475" cy="370" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="375">Send exchange request</text>
+    <ellipse cx="775" cy="370" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="375">Respond to exchange request</text>
+
+    <!-- Row 5 -->
+    <ellipse cx="475" cy="450" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="455">Use exchange chat</text>
+    <ellipse cx="775" cy="450" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="455">Leave review</text>
+
+    <!-- Row 6 -->
+    <ellipse cx="475" cy="530" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="475" y="535">View reputation</text>
+    <ellipse cx="775" cy="530" rx="115" ry="28" fill="#ffffff" stroke="#4285f4" stroke-width="1.8"/>
+    <text x="775" y="535">Log out</text>
+  </g>
+
+  <!-- Note -->
+  <text x="500" y="635" text-anchor="middle" font-size="12" font-style="italic" fill="#6b7785">Note: “Use exchange chat” and “Leave review” are available only for an accepted exchange request.</text>
+</svg>

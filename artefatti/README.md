@@ -32,3 +32,7 @@ Profile photo: extended the user profile with persistent photo upload and previe
 09/06/2026 
  
 Review flow — replaced the generic 500 on a second review with a clear explanation. Swapped the boolean canReview for getReviewBlockReason, which returns a human-readable reason (already reviewed, not accepted, not a participant, exchange gone) or null when allowed. ReviewGui now checks this on load and, if blocked, shows the reason and hides the form so the user can't attempt a disallowed review. Updated ReviewService/Async and ReviewServiceImpl, and adjusted the ReviewManager tests.
+
+10/06/2026
+
+Artefatti - 
