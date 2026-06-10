@@ -33,7 +33,8 @@ Review flow — replaced the generic 500 on a second review with a clear explana
 
 Demo database setup — prepared the persistent MapDB database for delivery testing. Temporarily removed the local database file from .gitignore.
 
-Docker-based demo environment — used Docker Desktop to run the application in a reproducible local environment and preserve a realistic test dataset. Populated the persistent MapDB database with two demo users and progressively exercised the main workflows through the web interface, including authentication, profile setup, announcements, exchange requests, chat interactions, and reviews. This allowed us to verify that the application state is preserved across executions and provided a representative dataset for future validation and the final delivery.
+Docker-based demo environment — ran the application through Docker Desktop and verified that the web interface was reachable at `localhost:8080`. Populated the persistent MapDB database through the application with two demo users and representative interactions involving profile setup, announcements, exchange requests, chat, and reviews. Reopened the application and confirmed that the stored data remained available across executions. The resulting database was versioned to provide a realistic dataset for future validation and the final delivery.
+
 
 
 10/06/2026
