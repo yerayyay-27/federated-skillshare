@@ -32,17 +32,16 @@ Reviews & reputation — completed the final spec block (Reputation & Feedback).
 
 Profile photo: extended the user profile with persistent photo upload and preview support. Added browser-side image reading through the FileReader API, server-side image format and size validation, and MapDB persistence using a dedicated photos collection. Updated the profile RPC and GUI so users can upload and immediately preview their photo, with additional unit tests covering valid uploads, invalid formats, and unknown users.
 
-Third sprint: Yeray González Menéndez: "Product Owner"; Jorge Vigil Bravo: "Scrum Master"
-
 09/06/2026 
  
 Review flow — replaced the generic 500 on a second review with a clear explanation. Swapped the boolean canReview for getReviewBlockReason, which returns a human-readable reason (already reviewed, not accepted, not a participant, exchange gone) or null when allowed. ReviewGui now checks this on load and, if blocked, shows the reason and hides the form so the user can't attempt a disallowed review. Updated ReviewService/Async and ReviewServiceImpl, and adjusted the ReviewManager tests.
+
+Third sprint: Yeray González Menéndez: "Product Owner"; Jorge Vigil Bravo: "Scrum Master"
 
 10/06/2026
 
 Demo database setup — prepared the persistent MapDB database for delivery testing. Temporarily removed the local database file from .gitignore.
 
 Docker-based demo environment — ran the application through Docker Desktop and verified that the web interface was reachable at `localhost:8080`. Populated the persistent MapDB database through the application with two demo users and representative interactions involving profile setup, announcements, exchange requests, chat, and reviews. Reopened the application and confirmed that the stored data remained available across executions. The resulting database was versioned to provide a realistic dataset for future validation and the final delivery.
-
 
 Artefatti - Produced the remaining project artifacts. We wrote the Developer Manual, an overview of the architecture and of how each feature was implemented, the design patterns adopted with their benefits, the User Manual, and the root README. We also created the use case diagram modelling the two actors (Visitor and Registered User) and their use cases. 
