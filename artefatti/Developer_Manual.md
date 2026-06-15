@@ -233,10 +233,10 @@ Business logic is covered by JUnit 5 unit tests located in `skillshare-server/sr
 
 A demo account is seeded automatically on first run (in the `UserRepository` constructor), so it exists on any machine without manual setup:
 
-| Email | Password | Username |
-|-------|----------|----------|
-| `test@unibo.it` | `1234` | `TestUser` |
-
+|     Email        | Password | Username   |
+|------------------|----------|------------|
+| `test@unibo.it`  |  `1234`  | `TestUser` |
+| `yeray@unibo.it` |  `2222`  | `Yeray`    |
 New accounts can also be created at any time through the registration screen.
 
 ---
