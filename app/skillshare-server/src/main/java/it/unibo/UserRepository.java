@@ -19,9 +19,7 @@ public class UserRepository {
     private final ConcurrentMap<String, String> passwords;
     private final ConcurrentMap<String, String> usernames;
     private final ConcurrentMap<String, String> bios;
-    // skill tags stored as a single comma-separated string per user
     private final ConcurrentMap<String, String> skillTags;
-    // profile photo stored as a base64 data URL per user
     private final ConcurrentMap<String, String> photos;
 
     public UserRepository() {
@@ -32,7 +30,6 @@ public class UserRepository {
         skillTags = db.hashMap("skillTags", Serializer.STRING, Serializer.STRING).createOrOpen();
         photos = db.hashMap("photos", Serializer.STRING, Serializer.STRING).createOrOpen();
 
-        // seed a test user on first run (only if it doesn't exist yet)
         if (!passwords.containsKey("test@unibo.it")) {
             passwords.put("test@unibo.it", "1234");
             usernames.put("test@unibo.it", "TestUser");
@@ -66,7 +63,7 @@ public class UserRepository {
         DatabaseCore.commit();
     }
 
-    // Rebuilds the full User object from the separate collections
+    // Rebuilds the full User object from the separate collections.
     public User getUser(String email) {
         if (!usernames.containsKey(email)) {
             return null;
@@ -80,6 +77,8 @@ public class UserRepository {
         }
         String photo = photos.get(email);
         user.setPhoto(photo == null ? "" : photo);
+        // Federated identity: every user belongs to this instance.
+        user.setInstance(FederationConfig.get().getInstanceId());
         return user;
     }
 }

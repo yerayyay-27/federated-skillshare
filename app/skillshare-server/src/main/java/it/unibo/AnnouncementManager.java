@@ -49,6 +49,8 @@ public class AnnouncementManager {
     public Announcement createAnnouncement(Announcement announcement) {
         validateAnnouncementDraft(announcement);
         announcement.setActive(true);
+        // Federated identity: the announcement belongs to this instance.
+        announcement.setOriginInstance(FederationConfig.get().getInstanceId());
 
         boolean inserted;
         do {
@@ -58,7 +60,6 @@ public class AnnouncementManager {
             inserted = repository.save(announcement);
         } while (!inserted);
 
-        // Federation: notify peers a new announcement was created (local-first).
         federationClient.broadcast(FederationEvent.announcementCreated(
                 FederationConfig.get().getInstanceId(), announcement));
 
@@ -109,12 +110,13 @@ public class AnnouncementManager {
                 announcement.getDescription(),
                 announcement.getAvailability(),
                 storedAnnouncement.isActive());
+        // Preserve the home instance (the 7-arg constructor doesn't copy it).
+        updatedAnnouncement.setOriginInstance(storedAnnouncement.getOriginInstance());
 
         if (!repository.update(updatedAnnouncement)) {
             throw new IllegalArgumentException("Announcement not found");
         }
 
-        // Federation: propagate the updated announcement so replicas converge.
         federationClient.broadcast(FederationEvent.announcementUpdated(
                 FederationConfig.get().getInstanceId(), updatedAnnouncement));
 

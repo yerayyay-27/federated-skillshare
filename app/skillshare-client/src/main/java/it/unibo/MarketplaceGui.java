@@ -161,7 +161,7 @@ public class MarketplaceGui {
             announcementPanel.add(new Label(
                     "Availability: " + displayValue(announcement.getAvailability())));
             announcementPanel.add(new Label(
-                    "Published by: " + displayValue(announcement.getOwnerUsername())));
+                    "Published by: " + ownerIdentity(announcement)));
 
             if (isOwnedByCurrentUser(announcement)) {
                 HorizontalPanel ownerActions = new HorizontalPanel();
@@ -202,9 +202,34 @@ public class MarketplaceGui {
     }
 
     private boolean isOwnedByCurrentUser(Announcement announcement) {
-        return currentUser != null
-                && currentUser.getUsername() != null
-                && currentUser.getUsername().equals(announcement.getOwnerUsername());
+        if (currentUser == null || currentUser.getUsername() == null) {
+            return false;
+        }
+        if (!currentUser.getUsername().equals(announcement.getOwnerUsername())) {
+            return false;
+        }
+        // Only local announcements are editable: the origin instance must
+        // match the user's own instance, so a remote "alice@inst-b" is not
+        // editable by a local "alice@inst-a".
+        String mine = currentUser.getInstance();
+        String origin = announcement.getOriginInstance();
+        if (mine == null || origin == null) {
+            return true; // backwards-compatible with pre-federation data
+        }
+        return mine.equals(origin);
+    }
+
+    // Renders the owner as user@instance (federated identity).
+    private String ownerIdentity(Announcement announcement) {
+        String owner = announcement.getOwnerUsername();
+        if (owner == null || owner.trim().isEmpty()) {
+            return "Unknown";
+        }
+        String origin = announcement.getOriginInstance();
+        if (origin == null || origin.trim().isEmpty()) {
+            return owner;
+        }
+        return owner + "@" + origin;
     }
 
     private void deleteAnnouncement(String announcementId) {
