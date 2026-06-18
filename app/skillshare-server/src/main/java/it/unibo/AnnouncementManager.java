@@ -58,15 +58,9 @@ public class AnnouncementManager {
             inserted = repository.save(announcement);
         } while (!inserted);
 
-        // Federation: notify peer instances that a new announcement was created.
-        // This is a local-first operation — the announcement is already saved;
-        // if peers are unreachable the broadcast fails silently and the local
-        // creation still succeeds (availability over immediate consistency).
-        FederationEvent event = new FederationEvent(
-                FederationEvent.TYPE_ANNOUNCEMENT_CREATED,
-                FederationConfig.get().getInstanceId(),
-                announcement);
-        federationClient.broadcast(event);
+        // Federation: notify peers a new announcement was created (local-first).
+        federationClient.broadcast(FederationEvent.announcementCreated(
+                FederationConfig.get().getInstanceId(), announcement));
 
         return announcement;
     }
@@ -119,6 +113,11 @@ public class AnnouncementManager {
         if (!repository.update(updatedAnnouncement)) {
             throw new IllegalArgumentException("Announcement not found");
         }
+
+        // Federation: propagate the updated announcement so replicas converge.
+        federationClient.broadcast(FederationEvent.announcementUpdated(
+                FederationConfig.get().getInstanceId(), updatedAnnouncement));
+
         return updatedAnnouncement;
     }
 
@@ -135,6 +134,12 @@ public class AnnouncementManager {
         if (!repository.deleteById(id)) {
             throw new IllegalArgumentException("Announcement not found");
         }
+
+        // Federation: notify peers this announcement was deleted, so replicas
+        // converge instead of keeping a stale copy.
+        federationClient.broadcast(FederationEvent.announcementDeleted(
+                FederationConfig.get().getInstanceId(), id));
+
         return true;
     }
 
