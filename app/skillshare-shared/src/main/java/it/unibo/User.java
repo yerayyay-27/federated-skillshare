@@ -5,13 +5,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class User implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private String username;
     private String email;
     private String bio;
     private List<String> skillTags;
-    private String photo; // base64 data URL, empty if none
+    private String photo;     // base64 data URL, empty if none
+    private String instance;  // home instance of this user (federated identity)
 
-    public User() { // required for GWT serialization
+    public User() {
         this.bio = "";
         this.skillTags = new ArrayList<String>();
         this.photo = "";
@@ -34,4 +38,7 @@ public class User implements Serializable {
 
     public String getPhoto() { return photo; }
     public void setPhoto(String photo) { this.photo = photo; }
+
+    public String getInstance() { return instance; }
+    public void setInstance(String instance) { this.instance = instance; }
 }
