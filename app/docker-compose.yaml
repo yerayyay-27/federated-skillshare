@@ -1,12 +1,28 @@
 services:
-  app:
+  instance-a:
     build: .
-    container_name: skillshare-app
+    container_name: skillshare-a
     ports:
       - "8080:8080"
     environment:
-      - env=dev
       - DATA_DIR=/var/lib/skillshare/db
+      - INSTANCE_ID=inst-a
+      - INSTANCE_URL=http://localhost:8080
+      - PEER_URLS=http://instance-b:8080
     volumes:
-      - ./:/var/lib/skillshare/db
+      - ./data-a:/var/lib/skillshare/db
+    restart: unless-stopped
+
+  instance-b:
+    build: .
+    container_name: skillshare-b
+    ports:
+      - "8081:8080"
+    environment:
+      - DATA_DIR=/var/lib/skillshare/db
+      - INSTANCE_ID=inst-b
+      - INSTANCE_URL=http://localhost:8081
+      - PEER_URLS=http://instance-a:8080
+    volumes:
+      - ./data-b:/var/lib/skillshare/db
     restart: unless-stopped
