@@ -1,0 +1,110 @@
+package it.unibo;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+
+import com.google.gson.Gson;
+
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+/**
+ * Receives federation events from peer instances (server-to-server).
+ * This is a plain Jakarta HttpServlet, not a GWT RPC servlet, because the
+ * caller is another instance sending JSON over HTTP, not a browser.
+ *
+ * Important: when applying a received event locally, this servlet calls the
+ * repository directly and does NOT go through the manager's broadcast path.
+ * Otherwise receiving an event would re-broadcast it to peers, causing an
+ * infinite propagation loop between instances.
+ */
+@SuppressWarnings("serial")
+public class FederationInboxServlet extends HttpServlet {
+
+    private final Gson gson = new Gson();
+    private final AnnouncementRepository announcementRepository = new AnnouncementRepository();
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String body = readBody(req);
+        FederationEvent event;
+        try {
+            event = gson.fromJson(body, FederationEvent.class);
+        } catch (Exception e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Malformed event");
+            return;
+        }
+
+        if (event == null || event.getType() == null) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing event type");
+            return;
+        }
+
+        switch (event.getType()) {
+            case FederationEvent.TYPE_ANNOUNCEMENT_CREATED:
+                handleAnnouncementCreated(event);
+                break;
+            case FederationEvent.TYPE_ANNOUNCEMENT_UPDATED:
+                handleAnnouncementUpdated(event);
+                break;
+            case FederationEvent.TYPE_ANNOUNCEMENT_DELETED:
+                handleAnnouncementDeleted(event);
+                break;
+            default:
+                // Unknown event types are ignored (forward compatibility).
+                break;
+        }
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    private void handleAnnouncementCreated(FederationEvent event) {
+        Announcement remote = event.getAnnouncement();
+        if (remote == null) {
+            return;
+        }
+        // save() ignores duplicate ids atomically, so receiving the same
+        // event twice is harmless (idempotent delivery).
+        announcementRepository.save(remote);
+        System.out.println("Federation: stored announcement " + remote.getId()
+                + " from " + event.getOriginInstance());
+    }
+
+    private void handleAnnouncementUpdated(FederationEvent event) {
+        Announcement remote = event.getAnnouncement();
+        if (remote == null || remote.getId() == null) {
+            return;
+        }
+        // If we already have it, update it; if we don't (e.g. the create event
+        // was missed), store it so replicas still converge.
+        if (!announcementRepository.update(remote)) {
+            announcementRepository.save(remote);
+        }
+        System.out.println("Federation: updated announcement " + remote.getId()
+                + " from " + event.getOriginInstance());
+    }
+
+    private void handleAnnouncementDeleted(FederationEvent event) {
+        String id = event.getAnnouncementId();
+        if (id == null || id.trim().isEmpty()) {
+            return;
+        }
+        // Deleting an already-absent announcement is a no-op, so this is
+        // also idempotent.
+        announcementRepository.deleteById(id);
+        System.out.println("Federation: deleted announcement " + id
+                + " from " + event.getOriginInstance());
+    }
+
+    private String readBody(HttpServletRequest req) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = req.getReader()) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+        }
+        return sb.toString();
+    }
+}

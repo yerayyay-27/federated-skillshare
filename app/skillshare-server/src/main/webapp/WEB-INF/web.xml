@@ -44,11 +44,6 @@
     <url-pattern>/app/announcements</url-pattern>
   </servlet-mapping>
 
-	<!-- Default page to serve -->
-  <welcome-file-list>
-    <welcome-file>index.html</welcome-file>
-  </welcome-file-list>
-  
   <!-- Profile management -->
   <servlet>
     <servlet-name>profileServlet</servlet-name>
@@ -88,5 +83,20 @@
     <servlet-name>reviewServlet</servlet-name>
     <url-pattern>/app/reviews</url-pattern>
   </servlet-mapping>
+
+  <!-- Federation inbox (server-to-server, not GWT RPC) -->
+  <servlet>
+    <servlet-name>federationInbox</servlet-name>
+    <servlet-class>it.unibo.FederationInboxServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>federationInbox</servlet-name>
+    <url-pattern>/federation/inbox</url-pattern>
+  </servlet-mapping>
+
+	<!-- Default page to serve -->
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
 
 </web-app>

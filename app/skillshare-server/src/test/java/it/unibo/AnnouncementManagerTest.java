@@ -17,10 +17,21 @@ class AnnouncementManagerTest {
 
     private AnnouncementManager manager;
 
+    // No-op federation client: unit tests must not perform real network calls.
+    private static final FederationClient NO_FEDERATION = new FederationClient() {
+        @Override
+        public void broadcast(FederationEvent event) {
+            // intentionally does nothing in tests
+        }
+    };
+
     @BeforeEach
     void setUp() {
         DatabaseCore.enableTestMode();
-        manager = new AnnouncementManager(new AnnouncementRepository());
+        manager = new AnnouncementManager(
+                new AnnouncementRepository(),
+                () -> java.util.UUID.randomUUID().toString(),
+                NO_FEDERATION);
     }
 
     @AfterEach
@@ -82,7 +93,8 @@ class AnnouncementManagerTest {
                 repository,
                 () -> attempts.getAndIncrement() == 0
                         ? "collision-id"
-                        : "generated-id");
+                        : "generated-id",
+                NO_FEDERATION);
 
         Announcement createdAnnouncement =
                 collisionManager.createAnnouncement(validAnnouncement(null));

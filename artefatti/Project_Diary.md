@@ -45,3 +45,26 @@ Demo database setup — prepared the persistent MapDB database for delivery test
 Docker-based demo environment — ran the application through Docker Desktop and verified that the web interface was reachable at `localhost:8080`. Populated the persistent MapDB database through the application with two demo users and representative interactions involving profile setup, announcements, exchange requests, chat, and reviews. Reopened the application and confirmed that the stored data remained available across executions. The resulting database was versioned to provide a realistic dataset for future validation and the final delivery.
 
 Artefatti - Produced the remaining project artifacts. We wrote the Developer Manual, an overview of the architecture and of how each feature was implemented, the design patterns adopted with their benefits, the User Manual, and the root README. We also created the use case diagram modelling the two actors (Visitor and Registered User) and their use cases. 
+
+Distributed Systems Project
+
+18/06/2026
+
+Federated marketplace — announcement replication across instances.
+We turned the centralized Skillshare into a federated peer-to-peer system where multiple independent instances cooperate. Each instance is an autonomous Skillshare server with its own users and its own MapDB database, configured from the outside (INSTANCE_ID, INSTANCE_URL, PEER_URLS, DATA_DIR) so the same code runs as any instance. We set up a two-instance deployment with Docker Compose (instance A on 8080, instance B on 8081), where instances reach each other over the internal Docker network by service name.
+Instances cooperate by exchanging domain events (not raw database rows) over plain HTTP + JSON — server-to-server communication, distinct from the GWT RPC used between a browser and its own instance. We implemented:
+
+FederationEvent (shared): the event exchanged between instances, with types AnnouncementCreated, AnnouncementUpdated and AnnouncementDeleted, plus the originating instance.
+FederationClient (server): broadcasts an event to every known peer; if a peer is unreachable it logs and continues, so the local operation still succeeds (availability over immediate consistency).
+FederationInboxServlet (server): a plain Jakarta servlet at /federation/inbox that receives events from peers and applies them to the local database.
+Hooks in AnnouncementManager so that creating, updating or deleting an announcement broadcasts the corresponding event to peers.
+
+As a result, an announcement created, edited or deleted on one instance is replicated to the others, so the marketplace spans the whole federation.
+Key design decisions worth highlighting:
+
+Events, not rows — instances notify each other of what happened, which keeps them loosely coupled and easy to extend to other event types.
+No re-broadcast loop — the inbox applies received events directly through the repository, never through the manager's broadcast path, so receiving an event doesn't re-propagate it and cause an infinite loop between instances.
+Idempotent delivery — creates ignore duplicate ids, deletes of an absent announcement are no-ops, and an update of an unknown announcement is stored; receiving the same event twice is harmless and replicas still converge.
+Local-first / availability — a local action is never rolled back because a peer is offline; this is an explicit CAP trade-off (availability and eventual consistency over immediate consistency).
+
+Known limitation (future work): if an instance is offline when an event is broadcast, it misses that event and its replica diverges until a later reconciliation mechanism (a pending-event queue or sync-on-reconnect) is added. We deliberately left this as future work.

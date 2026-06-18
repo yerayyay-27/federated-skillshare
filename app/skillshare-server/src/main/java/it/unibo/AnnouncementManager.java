@@ -10,6 +10,7 @@ public class AnnouncementManager {
 
     private final AnnouncementRepository repository;
     private final Supplier<String> idGenerator;
+    private final FederationClient federationClient;
 
     public AnnouncementManager() {
         this(new AnnouncementRepository(), () -> UUID.randomUUID().toString());
@@ -22,14 +23,27 @@ public class AnnouncementManager {
     AnnouncementManager(
             AnnouncementRepository repository,
             Supplier<String> idGenerator) {
+        this(repository, idGenerator, new FederationClient());
+    }
+
+    // Full constructor for tests: a federation client can be injected
+    // (e.g. a no-op) so unit tests don't perform real network calls.
+    AnnouncementManager(
+            AnnouncementRepository repository,
+            Supplier<String> idGenerator,
+            FederationClient federationClient) {
         if (repository == null) {
             throw new IllegalArgumentException("Announcement repository must not be null");
         }
         if (idGenerator == null) {
             throw new IllegalArgumentException("Announcement id generator must not be null");
         }
+        if (federationClient == null) {
+            throw new IllegalArgumentException("Federation client must not be null");
+        }
         this.repository = repository;
         this.idGenerator = idGenerator;
+        this.federationClient = federationClient;
     }
 
     public Announcement createAnnouncement(Announcement announcement) {
@@ -43,6 +57,10 @@ public class AnnouncementManager {
             announcement.setId(generatedId);
             inserted = repository.save(announcement);
         } while (!inserted);
+
+        // Federation: notify peers a new announcement was created (local-first).
+        federationClient.broadcast(FederationEvent.announcementCreated(
+                FederationConfig.get().getInstanceId(), announcement));
 
         return announcement;
     }
@@ -95,6 +113,11 @@ public class AnnouncementManager {
         if (!repository.update(updatedAnnouncement)) {
             throw new IllegalArgumentException("Announcement not found");
         }
+
+        // Federation: propagate the updated announcement so replicas converge.
+        federationClient.broadcast(FederationEvent.announcementUpdated(
+                FederationConfig.get().getInstanceId(), updatedAnnouncement));
+
         return updatedAnnouncement;
     }
 
@@ -111,6 +134,12 @@ public class AnnouncementManager {
         if (!repository.deleteById(id)) {
             throw new IllegalArgumentException("Announcement not found");
         }
+
+        // Federation: notify peers this announcement was deleted, so replicas
+        // converge instead of keeping a stale copy.
+        federationClient.broadcast(FederationEvent.announcementDeleted(
+                FederationConfig.get().getInstanceId(), id));
+
         return true;
     }
 
