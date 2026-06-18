@@ -94,6 +94,16 @@
     <url-pattern>/federation/inbox</url-pattern>
   </servlet-mapping>
 
+  <!-- Manual federation outbox retry trigger (server-to-server/admin HTTP) -->
+  <servlet>
+    <servlet-name>federationRetry</servlet-name>
+    <servlet-class>it.unibo.FederationRetryServlet</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>federationRetry</servlet-name>
+    <url-pattern>/federation/retry</url-pattern>
+  </servlet-mapping>
+
 	<!-- Default page to serve -->
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
