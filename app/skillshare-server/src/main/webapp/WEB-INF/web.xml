@@ -104,6 +104,11 @@
     <url-pattern>/federation/retry</url-pattern>
   </servlet-mapping>
 
+  <!-- Application-wide automatic retry for persisted federation events -->
+  <listener>
+    <listener-class>it.unibo.FederationRetryLifecycleListener</listener-class>
+  </listener>
+
 	<!-- Default page to serve -->
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>

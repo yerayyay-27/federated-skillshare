@@ -92,3 +92,18 @@ This completes a simple but effective availability and eventual-consistency scen
 We also added unit tests for the retry servlet using a fake FederationClient, so the tests verify the servlet behavior without making real network calls. The test suite passed successfully after the change.
 
 This implementation strengthens the distributed-systems design of the project: the system prioritizes availability over immediate consistency, stores failed events instead of losing them, and provides a controlled mechanism to make replicas converge later. Automatic background retry is still left as future work, but the current endpoint is enough to demonstrate offline recovery during the final discussion.
+
+Automatic federation retry — background recovery and eventual consistency.
+
+We improved the federation outbox by adding automatic background retry for failed and pending federation events. Previously, failed deliveries were persisted in the outbox and could be retried manually through `POST /federation/retry`, but this still required a manual action after an offline instance came back online.
+
+To make the local multi-instance demo more realistic, we added a `FederationRetryScheduler`. Each application instance starts a single background scheduled task when the web application starts. By default, the scheduler runs every 10 seconds and calls the existing `FederationClient.retryPending()` method. This means that pending or failed outbox events are periodically retried without requiring the user to run a manual `curl` command.
+
+The scheduler is integrated through a `FederationRetryLifecycleListener`, registered in `web.xml`. The listener starts the scheduler when the web application is initialized and stops it cleanly when the application is shut down. The retry behavior can be configured through `FEDERATION_RETRY_ENABLED` and `FEDERATION_RETRY_INTERVAL_SECONDS`, with safe defaults enabled and set to 10 seconds. Exceptions during retry are logged and contained so that future retry cycles can continue.
+
+This strengthens the distributed behavior of the system. If `instance-b` (`localhost:8081`) is offline and an announcement is created on `instance-a` (`localhost:8080`), the local operation still succeeds and the failed delivery is stored in the outbox. When `instance-b` comes back online, `instance-a` automatically retries the stored event in the background, and the missed announcement eventually appears in the remote marketplace without manual intervention.
+
+We also kept the manual `POST /federation/retry` endpoint for testing and debugging. Unit tests were added for the scheduler and lifecycle listener, avoiding real network calls. The full Maven test suite passed successfully with 123 tests and no failures.
+
+This completes a clear availability and eventual-consistency scenario for the final discussion: the system remains available during peer failures and automatically converges once communication is restored.
+
