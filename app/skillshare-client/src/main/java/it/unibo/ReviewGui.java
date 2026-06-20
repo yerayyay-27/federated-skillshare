@@ -120,9 +120,14 @@ public class ReviewGui {
 
     private String otherParticipant() {
         if (currentUser.getUsername() != null
-                && currentUser.getUsername().equals(exchangeRequest.getFromUsername())) {
-            return exchangeRequest.getToUsername();
+                && currentUser.getUsername().equals(exchangeRequest.getFromUsername())
+                && sameInstance(currentUser.getInstance(), exchangeRequest.getFromInstance())) {
+            return exchangeRequest.getToHandle();
         }
-        return exchangeRequest.getFromUsername();
+        return exchangeRequest.getFromHandle();
+    }
+
+    private boolean sameInstance(String first, String second) {
+        return first == null || second == null || first.equals(second);
     }
 }

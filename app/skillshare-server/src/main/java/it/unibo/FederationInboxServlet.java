@@ -29,6 +29,7 @@ public class FederationInboxServlet extends HttpServlet {
     private final AnnouncementRepository announcementRepository;
     private final ExchangeRequestRepository exchangeRepository;
     private final ChatRepository chatRepository;
+    private final ReviewRepository reviewRepository;
     private final FederationInboxRepository inboxRepository;
     private final LamportClock lamportClock = new LamportClock();
 
@@ -37,6 +38,7 @@ public class FederationInboxServlet extends HttpServlet {
                 new AnnouncementRepository(),
                 new ExchangeRequestRepository(),
                 new ChatRepository(),
+                new ReviewRepository(),
                 new FederationInboxRepository());
     }
 
@@ -45,7 +47,12 @@ public class FederationInboxServlet extends HttpServlet {
             AnnouncementRepository announcementRepository,
             ExchangeRequestRepository exchangeRepository,
             FederationInboxRepository inboxRepository) {
-        this(announcementRepository, exchangeRepository, new ChatRepository(), inboxRepository);
+        this(
+                announcementRepository,
+                exchangeRepository,
+                new ChatRepository(),
+                new ReviewRepository(),
+                inboxRepository);
     }
 
     FederationInboxServlet(
@@ -53,15 +60,31 @@ public class FederationInboxServlet extends HttpServlet {
             ExchangeRequestRepository exchangeRepository,
             ChatRepository chatRepository,
             FederationInboxRepository inboxRepository) {
+        this(
+                announcementRepository,
+                exchangeRepository,
+                chatRepository,
+                new ReviewRepository(),
+                inboxRepository);
+    }
+
+    FederationInboxServlet(
+            AnnouncementRepository announcementRepository,
+            ExchangeRequestRepository exchangeRepository,
+            ChatRepository chatRepository,
+            ReviewRepository reviewRepository,
+            FederationInboxRepository inboxRepository) {
         if (announcementRepository == null
                 || exchangeRepository == null
                 || chatRepository == null
+                || reviewRepository == null
                 || inboxRepository == null) {
             throw new IllegalArgumentException("Federation inbox repositories must not be null");
         }
         this.announcementRepository = announcementRepository;
         this.exchangeRepository = exchangeRepository;
         this.chatRepository = chatRepository;
+        this.reviewRepository = reviewRepository;
         this.inboxRepository = inboxRepository;
     }
 
@@ -127,6 +150,9 @@ public class FederationInboxServlet extends HttpServlet {
                 break;
             case FederationEvent.TYPE_CHAT_MESSAGE_CREATED:
                 handleChatMessageCreated(event);
+                break;
+            case FederationEvent.TYPE_REVIEW_CREATED:
+                handleReviewCreated(event);
                 break;
             default:
                 // Unknown event types are ignored (forward compatibility).
@@ -229,6 +255,99 @@ public class FederationInboxServlet extends HttpServlet {
         chatRepository.addMessage(message.getExchangeRequestId(), message);
         System.out.println("Federation: stored chat message for exchange "
                 + message.getExchangeRequestId() + " from " + event.getOriginInstance());
+    }
+
+    private void handleReviewCreated(FederationEvent event) {
+        requireNotBlank(event.getOriginInstance(), "Review event origin must not be blank");
+        Review review = event.getReview();
+        if (review == null) {
+            throw new IllegalArgumentException("Review payload must not be null");
+        }
+        requireNotBlank(review.getId(), "Review id must not be blank");
+        requireNotBlank(review.getExchangeRequestId(), "Review exchange id must not be blank");
+        requireNotBlank(review.getFromUsername(), "Reviewer username must not be blank");
+        requireNotBlank(review.getFromInstance(), "Reviewer instance must not be blank");
+        requireNotBlank(review.getToUsername(), "Reviewed username must not be blank");
+        requireNotBlank(review.getToInstance(), "Reviewed instance must not be blank");
+        if (review.getRating() < 1 || review.getRating() > 5) {
+            throw new IllegalArgumentException("Review rating must be between 1 and 5");
+        }
+        if (!event.getOriginInstance().equals(review.getFromInstance())) {
+            throw new IllegalArgumentException("Reviewer instance must match event origin");
+        }
+
+        String localInstance = FederationConfig.get().getInstanceId();
+        if (!localInstance.equals(review.getToInstance())) {
+            return;
+        }
+
+        ExchangeRequest exchange = exchangeRepository.findById(review.getExchangeRequestId());
+        if (exchange == null) {
+            throw new IllegalArgumentException("Review exchange request was not found");
+        }
+        if (!ExchangeRequest.STATUS_ACCEPTED.equals(exchange.getStatus())) {
+            throw new IllegalArgumentException("Reviews require an accepted exchange");
+        }
+        if (!participantsMatchReview(exchange, review, localInstance)) {
+            throw new IllegalArgumentException("Review identities do not match exchange participants");
+        }
+        if (sameIdentity(
+                review.getFromUsername(), review.getFromInstance(),
+                review.getToUsername(), review.getToInstance())) {
+            throw new IllegalArgumentException("Users cannot review themselves");
+        }
+
+        if (reviewRepository.existsForExchangeFrom(
+                review.getExchangeRequestId(),
+                review.getFromUsername(),
+                review.getFromInstance())) {
+            return;
+        }
+        reviewRepository.save(review);
+        System.out.println("Federation: stored review " + review.getId()
+                + " for " + review.getToHandle()
+                + " from " + event.getOriginInstance());
+    }
+
+    private boolean participantsMatchReview(
+            ExchangeRequest exchange,
+            Review review,
+            String localInstance) {
+        String requesterInstance = orLocal(exchange.getFromInstance(), localInstance);
+        String ownerInstance = orLocal(exchange.getToInstance(), localInstance);
+        boolean reviewerIsRequester = sameIdentity(
+                review.getFromUsername(), review.getFromInstance(),
+                exchange.getFromUsername(), requesterInstance);
+        boolean reviewedIsOwner = sameIdentity(
+                review.getToUsername(), review.getToInstance(),
+                exchange.getToUsername(), ownerInstance);
+        boolean reviewerIsOwner = sameIdentity(
+                review.getFromUsername(), review.getFromInstance(),
+                exchange.getToUsername(), ownerInstance);
+        boolean reviewedIsRequester = sameIdentity(
+                review.getToUsername(), review.getToInstance(),
+                exchange.getFromUsername(), requesterInstance);
+        return (reviewerIsRequester && reviewedIsOwner)
+                || (reviewerIsOwner && reviewedIsRequester);
+    }
+
+    private String orLocal(String instance, String localInstance) {
+        return instance == null ? localInstance : instance;
+    }
+
+    private boolean sameIdentity(
+            String firstUsername,
+            String firstInstance,
+            String secondUsername,
+            String secondInstance) {
+        return firstUsername.equals(secondUsername)
+                && firstInstance.equals(secondInstance);
+    }
+
+    private void requireNotBlank(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
     // True if the event is meant for this instance. Null is treated as a match
