@@ -1,7 +1,6 @@
 package it.unibo;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 /**
  * An event exchanged between federated instances.
@@ -114,8 +113,12 @@ public class FederationEvent implements Serializable {
 
     void ensureEventId() {
         if (eventId == null || eventId.trim().isEmpty()) {
-            eventId = UUID.randomUUID().toString();
+            eventId = generateEventId();
         }
+    }
+
+    private static String generateEventId() {
+        return "event-" + System.currentTimeMillis() + "-" + Math.random();
     }
 
     private static FederationEvent newEvent(String type, String originInstance) {
