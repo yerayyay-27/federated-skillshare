@@ -18,6 +18,14 @@ public class ExchangeRequest implements Serializable {
     private String message;
     private String status;
 
+    // Federated identity: which instance each participant belongs to.
+    // The exchange is authoritative on the owner's instance (toInstance); the
+    // requester's instance (fromInstance) keeps a replica so the requester can
+    // see the status. Both are null on pre-federation (single-instance) data,
+    // which is treated as "this instance" everywhere it matters.
+    private String fromInstance;
+    private String toInstance;
+
     public ExchangeRequest() {
     }
 
@@ -58,4 +66,20 @@ public class ExchangeRequest implements Serializable {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getFromInstance() { return fromInstance; }
+    public void setFromInstance(String fromInstance) { this.fromInstance = fromInstance; }
+
+    public String getToInstance() { return toInstance; }
+    public void setToInstance(String toInstance) { this.toInstance = toInstance; }
+
+    /** Federated identity of the requester, e.g. {@code alice@inst-a}. */
+    public String getFromHandle() {
+        return fromInstance == null ? fromUsername : fromUsername + "@" + fromInstance;
+    }
+
+    /** Federated identity of the owner, e.g. {@code bob@inst-b}. */
+    public String getToHandle() {
+        return toInstance == null ? toUsername : toUsername + "@" + toInstance;
+    }
 }
