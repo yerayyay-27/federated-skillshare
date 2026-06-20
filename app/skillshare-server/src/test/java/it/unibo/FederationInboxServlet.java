@@ -30,7 +30,6 @@ public class FederationInboxServlet extends HttpServlet {
     private final ExchangeRequestRepository exchangeRepository;
     private final ChatRepository chatRepository;
     private final FederationInboxRepository inboxRepository;
-    private final LamportClock lamportClock = new LamportClock();
 
     public FederationInboxServlet() {
         this(
@@ -214,18 +213,15 @@ public class FederationInboxServlet extends HttpServlet {
                 + " from " + event.getOriginInstance());
     }
 
-    // A chat message from the other participant's instance. We first advance
-    // our Lamport clock with the message's timestamp, so any message we send
-    // afterwards is ordered strictly after this one (causality). Then we append
-    // it. addMessage only appends and has no natural dedup key, so duplicate
-    // delivery is prevented by the eventId ledger in applyEvent (this handler
-    // runs at most once per event).
+    // A chat message from the other participant's instance. Append it to our
+    // replica of the conversation. addMessage only appends and has no natural
+    // dedup key, so duplicate delivery is prevented by the eventId ledger in
+    // applyEvent (this handler runs at most once per event).
     private void handleChatMessageCreated(FederationEvent event) {
         ChatMessage message = event.getChatMessage();
         if (message == null || message.getExchangeRequestId() == null) {
             return;
         }
-        lamportClock.update(message.getLamportTimestamp());
         chatRepository.addMessage(message.getExchangeRequestId(), message);
         System.out.println("Federation: stored chat message for exchange "
                 + message.getExchangeRequestId() + " from " + event.getOriginInstance());

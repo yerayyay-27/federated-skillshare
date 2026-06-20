@@ -9,12 +9,17 @@ import java.util.UUID;
  * domain events. The payload depends on the event type; "originInstance"
  * records which instance produced the event.
  *
- * Two event families share this envelope:
+ * Event families sharing this envelope:
  *  - Announcement events: replicated to every peer (the marketplace is global).
  *  - Exchange events: conceptually directed, but still sent through the same
  *    broadcast/outbox path. Each inbox decides whether the event concerns it by
  *    comparing its own instance id against the request's fromInstance /
  *    toInstance, so no extra "target" field is needed.
+ *  - Chat events: a single message in an accepted exchange's conversation,
+ *    sent to the other participant's instance so both replicas converge.
+ *
+ * Every event carries a unique "eventId" so the receiving inbox can apply it
+ * at most once (idempotency under at-least-once delivery).
  */
 public class FederationEvent implements Serializable {
 
@@ -28,12 +33,15 @@ public class FederationEvent implements Serializable {
     public static final String TYPE_EXCHANGE_ACCEPTED = "ExchangeAccepted";
     public static final String TYPE_EXCHANGE_REJECTED = "ExchangeRejected";
 
+    public static final String TYPE_CHAT_MESSAGE_CREATED = "ChatMessageCreated";
+
     private String eventId;
     private String type;
     private String originInstance;
     private Announcement announcement;          // payload for Announcement Created / Updated
     private String announcementId;              // payload for Announcement Deleted
     private ExchangeRequest exchangeRequest;    // payload for all Exchange events
+    private ChatMessage chatMessage;            // payload for Chat events
 
     public FederationEvent() {
     }
@@ -85,6 +93,17 @@ public class FederationEvent implements Serializable {
         return event;
     }
 
+    /**
+     * A chat message in an accepted exchange. Sent to the other participant's
+     * instance, which appends it to its replica of the conversation. The
+     * eventId makes repeated delivery safe (chat storage only appends).
+     */
+    public static FederationEvent chatMessageCreated(String originInstance, ChatMessage chatMessage) {
+        FederationEvent event = newEvent(TYPE_CHAT_MESSAGE_CREATED, originInstance);
+        event.chatMessage = chatMessage;
+        return event;
+    }
+
     void ensureEventId() {
         if (eventId == null || eventId.trim().isEmpty()) {
             eventId = UUID.randomUUID().toString();
@@ -116,4 +135,7 @@ public class FederationEvent implements Serializable {
 
     public ExchangeRequest getExchangeRequest() { return exchangeRequest; }
     public void setExchangeRequest(ExchangeRequest exchangeRequest) { this.exchangeRequest = exchangeRequest; }
+
+    public ChatMessage getChatMessage() { return chatMessage; }
+    public void setChatMessage(ChatMessage chatMessage) { this.chatMessage = chatMessage; }
 }
