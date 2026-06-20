@@ -15,7 +15,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * caller is another instance sending JSON over HTTP, not a browser.
  *
  * Important: when applying a received event locally, this servlet calls the
- * repository directly and does NOT go through the manager's broadcast path.
+ * repository directly and does NOT go through any manager's broadcast path.
  * Otherwise receiving an event would re-broadcast it to peers, causing an
  * infinite propagation loop between instances.
  */
@@ -24,6 +24,7 @@ public class FederationInboxServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
     private final AnnouncementRepository announcementRepository = new AnnouncementRepository();
+    private final ExchangeRequestRepository exchangeRepository = new ExchangeRequestRepository();
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -50,6 +51,15 @@ public class FederationInboxServlet extends HttpServlet {
                 break;
             case FederationEvent.TYPE_ANNOUNCEMENT_DELETED:
                 handleAnnouncementDeleted(event);
+                break;
+            case FederationEvent.TYPE_EXCHANGE_REQUESTED:
+                handleExchangeRequested(event);
+                break;
+            case FederationEvent.TYPE_EXCHANGE_ACCEPTED:
+                handleExchangeStatus(event, ExchangeRequest.STATUS_ACCEPTED);
+                break;
+            case FederationEvent.TYPE_EXCHANGE_REJECTED:
+                handleExchangeStatus(event, ExchangeRequest.STATUS_REJECTED);
                 break;
             default:
                 // Unknown event types are ignored (forward compatibility).
@@ -95,6 +105,55 @@ public class FederationInboxServlet extends HttpServlet {
         announcementRepository.deleteById(id);
         System.out.println("Federation: deleted announcement " + id
                 + " from " + event.getOriginInstance());
+    }
+
+    // We are (or should be) the announcement owner's instance: store the new
+    // request so the owner sees it under "Received". Acting only when the
+    // request targets this instance keeps other peers from storing it.
+    private void handleExchangeRequested(FederationEvent event) {
+        ExchangeRequest remote = event.getExchangeRequest();
+        if (remote == null || remote.getId() == null) {
+            return;
+        }
+        if (!targetsThisInstance(remote.getToInstance())) {
+            return;
+        }
+        // save() uses putIfAbsent, so a duplicate delivery is ignored.
+        exchangeRepository.save(remote);
+        System.out.println("Federation: stored exchange request " + remote.getId()
+                + " from " + event.getOriginInstance());
+    }
+
+    // We are (or should be) the requester's instance: update our replica's
+    // status so the requester sees the outcome under "Sent".
+    private void handleExchangeStatus(FederationEvent event, String newStatus) {
+        ExchangeRequest remote = event.getExchangeRequest();
+        if (remote == null || remote.getId() == null) {
+            return;
+        }
+        if (!targetsThisInstance(remote.getFromInstance())) {
+            return;
+        }
+        ExchangeRequest local = exchangeRepository.findById(remote.getId());
+        if (local != null) {
+            local.setStatus(newStatus);
+            exchangeRepository.update(local);
+        } else {
+            // We somehow never stored the request (e.g. missed the create);
+            // store the remote copy, which already carries the right status.
+            remote.setStatus(newStatus);
+            exchangeRepository.save(remote);
+        }
+        System.out.println("Federation: applied " + newStatus
+                + " to exchange request " + remote.getId()
+                + " from " + event.getOriginInstance());
+    }
+
+    // True if the event is meant for this instance. Null is treated as a match
+    // for backwards-compatibility, though federated events always set it.
+    private boolean targetsThisInstance(String instance) {
+        return instance == null
+                || instance.equals(FederationConfig.get().getInstanceId());
     }
 
     private String readBody(HttpServletRequest req) throws IOException {
