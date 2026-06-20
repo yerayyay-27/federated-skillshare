@@ -16,6 +16,7 @@ class ChatManagerTest {
     private static final String LOCAL_INSTANCE = "inst-local"; // FederationConfig default
     private static final String REMOTE_INSTANCE = "inst-b";
 
+    private ChatRepository chatRepository;
     private ExchangeRequestRepository exchangeRepository;
     private CapturingFederationClient federation;
     private ChatManager manager;
@@ -23,9 +24,10 @@ class ChatManagerTest {
     @BeforeEach
     void setUp() {
         DatabaseCore.enableTestMode();
+        chatRepository = new ChatRepository();
         exchangeRepository = new ExchangeRequestRepository();
         federation = new CapturingFederationClient();
-        manager = new ChatManager(new ChatRepository(), exchangeRepository, federation);
+        manager = new ChatManager(chatRepository, exchangeRepository, federation);
         // an accepted exchange between bob (requester) and alice (owner),
         // both on this instance (no instances set -> treated as local)
         exchangeRepository.save(new ExchangeRequest(
@@ -160,6 +162,59 @@ class ChatManagerTest {
         assertEquals(1, federation.events.size());
         assertEquals(FederationEvent.TYPE_CHAT_MESSAGE_CREATED,
                 federation.events.get(0).getType());
+    }
+
+    // --- Logical-clock ordering ---
+
+    @Test
+    void messagesGetIncreasingLamportTimestamps() {
+        ChatMessage first = manager.sendMessage("ex-1", "bob", "1");
+        ChatMessage second = manager.sendMessage("ex-1", "alice", "2");
+
+        assertTrue(first.getLamportTimestamp() < second.getLamportTimestamp());
+    }
+
+    @Test
+    void getMessagesOrdersByLamportNotInsertion() {
+        // Simulate a remote message that arrived out of order: it was sent
+        // earlier (lower Lamport) but stored after a local message.
+        ChatMessage local = manager.sendMessage("ex-1", "alice", "local later text");
+        long localTs = local.getLamportTimestamp();
+
+        ChatMessage earlierRemote = new ChatMessage("ex-1", "bob", "earlier remote text",
+                System.currentTimeMillis());
+        earlierRemote.setSenderInstance(REMOTE_INSTANCE);
+        earlierRemote.setLamportTimestamp(localTs - 1);
+        chatRepository.addMessage("ex-1", earlierRemote); // appended last
+
+        List<ChatMessage> messages = manager.getMessages("ex-1", "alice");
+
+        assertEquals("earlier remote text", messages.get(0).getText());
+        assertEquals("local later text", messages.get(1).getText());
+    }
+
+    @Test
+    void concurrentMessagesBreakTiesByInstance() {
+        // Two messages with the SAME Lamport timestamp (concurrent). The tie is
+        // broken deterministically by instance id, so every replica agrees.
+        ChatMessage fromB = new ChatMessage("ex-1", "bob", "from B",
+                System.currentTimeMillis());
+        fromB.setSenderInstance(REMOTE_INSTANCE); // "inst-b"
+        fromB.setLamportTimestamp(7);
+
+        ChatMessage fromLocal = new ChatMessage("ex-1", "alice", "from local",
+                System.currentTimeMillis());
+        fromLocal.setSenderInstance(LOCAL_INSTANCE); // "inst-local"
+        fromLocal.setLamportTimestamp(7);
+
+        chatRepository.addMessage("ex-1", fromB);     // appended first
+        chatRepository.addMessage("ex-1", fromLocal); // appended second
+
+        List<ChatMessage> messages = manager.getMessages("ex-1", "alice");
+
+        // "inst-b" sorts before "inst-local"
+        assertEquals("from B", messages.get(0).getText());
+        assertEquals("from local", messages.get(1).getText());
     }
 
     private static class CapturingFederationClient extends FederationClient {

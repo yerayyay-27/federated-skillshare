@@ -1,5 +1,6 @@
 package it.unibo;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class ChatManager {
@@ -7,6 +8,7 @@ public class ChatManager {
     private final ChatRepository chatRepository;
     private final ExchangeRequestRepository exchangeRepository;
     private final FederationClient federationClient;
+    private final LamportClock lamportClock = new LamportClock();
 
     public ChatManager() {
         this(new ChatRepository(), new ExchangeRequestRepository(), new FederationClient());
@@ -50,6 +52,9 @@ public class ChatManager {
                 text.trim(),
                 System.currentTimeMillis());
         message.setSenderInstance(localInstance);
+        // Sending is a local event: advance the logical clock and stamp the
+        // message so both instances can order the conversation deterministically.
+        message.setLamportTimestamp(lamportClock.tick());
 
         // Local-first: store on this instance regardless of peer reachability.
         chatRepository.addMessage(exchangeRequestId, message);
@@ -67,7 +72,16 @@ public class ChatManager {
     public List<ChatMessage> getMessages(String exchangeRequestId, String username) {
         ExchangeRequest request = exchangeRepository.findById(exchangeRequestId);
         ensureAccessibleChat(request, username);
-        return chatRepository.getMessages(exchangeRequestId);
+
+        List<ChatMessage> messages = chatRepository.getMessages(exchangeRequestId);
+        // Deterministic total order: logical time first, then instance id to
+        // break ties between concurrent messages, then wall-clock as a final
+        // tie-breaker. Both instances therefore display the same order.
+        messages.sort(Comparator
+                .comparingLong(ChatMessage::getLamportTimestamp)
+                .thenComparing(m -> m.getSenderInstance() == null ? "" : m.getSenderInstance())
+                .thenComparingLong(ChatMessage::getTimestamp));
+        return messages;
     }
 
     // The chat exists only for accepted requests, and only the two participants

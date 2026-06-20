@@ -8,9 +8,10 @@ public class ChatMessage implements Serializable {
 
     private String exchangeRequestId;
     private String senderUsername;
-    private String senderInstance; // home instance of the sender (federated identity)
+    private String senderInstance;   // home instance of the sender (federated identity)
     private String text;
-    private long timestamp;
+    private long timestamp;           // wall-clock time, for display only
+    private long lamportTimestamp;    // logical time, for deterministic ordering
 
     public ChatMessage() {
     }
@@ -36,6 +37,9 @@ public class ChatMessage implements Serializable {
 
     public long getTimestamp() { return timestamp; }
     public void setTimestamp(long timestamp) { this.timestamp = timestamp; }
+
+    public long getLamportTimestamp() { return lamportTimestamp; }
+    public void setLamportTimestamp(long lamportTimestamp) { this.lamportTimestamp = lamportTimestamp; }
 
     /** Federated identity of the sender, e.g. {@code alice@inst-a}. */
     public String getSenderHandle() {

@@ -18,6 +18,9 @@ import jakarta.servlet.http.HttpServletResponse;
  * repository directly and does NOT go through any manager's broadcast path.
  * Otherwise receiving an event would re-broadcast it to peers, causing an
  * infinite propagation loop between instances.
+ *
+ * Delivery is at-least-once (persistent outbox + retry), so every event is
+ * applied at most once here, guarded by the eventId inbox ledger.
  */
 @SuppressWarnings("serial")
 public class FederationInboxServlet extends HttpServlet {
@@ -25,26 +28,40 @@ public class FederationInboxServlet extends HttpServlet {
     private final Gson gson = new Gson();
     private final AnnouncementRepository announcementRepository;
     private final ExchangeRequestRepository exchangeRepository;
+    private final ChatRepository chatRepository;
     private final FederationInboxRepository inboxRepository;
+    private final LamportClock lamportClock = new LamportClock();
 
     public FederationInboxServlet() {
         this(
                 new AnnouncementRepository(),
                 new ExchangeRequestRepository(),
+                new ChatRepository(),
                 new FederationInboxRepository());
+    }
+
+    // Kept for existing tests that don't need to inject a chat repository.
+    FederationInboxServlet(
+            AnnouncementRepository announcementRepository,
+            ExchangeRequestRepository exchangeRepository,
+            FederationInboxRepository inboxRepository) {
+        this(announcementRepository, exchangeRepository, new ChatRepository(), inboxRepository);
     }
 
     FederationInboxServlet(
             AnnouncementRepository announcementRepository,
             ExchangeRequestRepository exchangeRepository,
+            ChatRepository chatRepository,
             FederationInboxRepository inboxRepository) {
         if (announcementRepository == null
                 || exchangeRepository == null
+                || chatRepository == null
                 || inboxRepository == null) {
             throw new IllegalArgumentException("Federation inbox repositories must not be null");
         }
         this.announcementRepository = announcementRepository;
         this.exchangeRepository = exchangeRepository;
+        this.chatRepository = chatRepository;
         this.inboxRepository = inboxRepository;
     }
 
@@ -107,6 +124,9 @@ public class FederationInboxServlet extends HttpServlet {
                 break;
             case FederationEvent.TYPE_EXCHANGE_REJECTED:
                 handleExchangeStatus(event, ExchangeRequest.STATUS_REJECTED);
+                break;
+            case FederationEvent.TYPE_CHAT_MESSAGE_CREATED:
+                handleChatMessageCreated(event);
                 break;
             default:
                 // Unknown event types are ignored (forward compatibility).
@@ -192,6 +212,23 @@ public class FederationInboxServlet extends HttpServlet {
         System.out.println("Federation: applied " + newStatus
                 + " to exchange request " + remote.getId()
                 + " from " + event.getOriginInstance());
+    }
+
+    // A chat message from the other participant's instance. We first advance
+    // our Lamport clock with the message's timestamp, so any message we send
+    // afterwards is ordered strictly after this one (causality). Then we append
+    // it. addMessage only appends and has no natural dedup key, so duplicate
+    // delivery is prevented by the eventId ledger in applyEvent (this handler
+    // runs at most once per event).
+    private void handleChatMessageCreated(FederationEvent event) {
+        ChatMessage message = event.getChatMessage();
+        if (message == null || message.getExchangeRequestId() == null) {
+            return;
+        }
+        lamportClock.update(message.getLamportTimestamp());
+        chatRepository.addMessage(message.getExchangeRequestId(), message);
+        System.out.println("Federation: stored chat message for exchange "
+                + message.getExchangeRequestId() + " from " + event.getOriginInstance());
     }
 
     // True if the event is meant for this instance. Null is treated as a match
