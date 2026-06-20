@@ -23,8 +23,30 @@ import jakarta.servlet.http.HttpServletResponse;
 public class FederationInboxServlet extends HttpServlet {
 
     private final Gson gson = new Gson();
-    private final AnnouncementRepository announcementRepository = new AnnouncementRepository();
-    private final ExchangeRequestRepository exchangeRepository = new ExchangeRequestRepository();
+    private final AnnouncementRepository announcementRepository;
+    private final ExchangeRequestRepository exchangeRepository;
+    private final FederationInboxRepository inboxRepository;
+
+    public FederationInboxServlet() {
+        this(
+                new AnnouncementRepository(),
+                new ExchangeRequestRepository(),
+                new FederationInboxRepository());
+    }
+
+    FederationInboxServlet(
+            AnnouncementRepository announcementRepository,
+            ExchangeRequestRepository exchangeRepository,
+            FederationInboxRepository inboxRepository) {
+        if (announcementRepository == null
+                || exchangeRepository == null
+                || inboxRepository == null) {
+            throw new IllegalArgumentException("Federation inbox repositories must not be null");
+        }
+        this.announcementRepository = announcementRepository;
+        this.exchangeRepository = exchangeRepository;
+        this.inboxRepository = inboxRepository;
+    }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -41,7 +63,32 @@ public class FederationInboxServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing event type");
             return;
         }
+        if (event.getEventId() == null || event.getEventId().trim().isEmpty()) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, "Missing event id");
+            return;
+        }
 
+        applyEvent(event);
+
+        resp.setStatus(HttpServletResponse.SC_OK);
+    }
+
+    synchronized boolean applyEvent(FederationEvent event) {
+        if (event == null || event.getEventId() == null
+                || event.getEventId().trim().isEmpty()) {
+            throw new IllegalArgumentException("Federation event id must not be blank");
+        }
+        if (inboxRepository.hasProcessed(event.getEventId())) {
+            System.out.println("Federation: ignored duplicate event " + event.getEventId());
+            return false;
+        }
+
+        applyEventOnce(event);
+        inboxRepository.markProcessed(event);
+        return true;
+    }
+
+    private void applyEventOnce(FederationEvent event) {
         switch (event.getType()) {
             case FederationEvent.TYPE_ANNOUNCEMENT_CREATED:
                 handleAnnouncementCreated(event);
@@ -65,8 +112,6 @@ public class FederationInboxServlet extends HttpServlet {
                 // Unknown event types are ignored (forward compatibility).
                 break;
         }
-
-        resp.setStatus(HttpServletResponse.SC_OK);
     }
 
     private void handleAnnouncementCreated(FederationEvent event) {

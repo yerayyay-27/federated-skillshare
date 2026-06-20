@@ -115,4 +115,25 @@ When a user requests an announcement owned by another instance, the requester’
 
 Unit tests were added for local-versus-remote broadcasting, instance metadata, acceptance propagation and replica filtering. This change federates the exchange request and response workflow only; cross-instance chat and reviews remain future work and the complete two-instance Docker flow still requires manual verification.
 
+Federated exchange request hardening — identity-safe requests and status propagation.
+
+We hardened the federated exchange request workflow to make it safer and more consistent with the `user@instance` identity model. The self-request validation is now instance-aware: a user cannot request their own local announcement, but two users with the same local username on different instances are treated as different federated users. For example, `alice@inst-a` can request an announcement owned by `alice@inst-b`, while `alice@inst-a` is still prevented from requesting her own `alice@inst-a` announcement.
+
+We also improved the exchange request interface so that received and sent requests display federated handles such as `alice@inst-a` and `bob@inst-b` instead of only local usernames. This makes cross-instance requests clearer and avoids confusion when different instances contain users with the same username.
+
+Additional tests were added for same-username scenarios, rejection propagation, and federation inbox handling. The inbox tests cover storing exchange requests targeted at the local instance, ignoring requests for other instances, applying accepted and rejected statuses, and handling duplicate request delivery. The full Maven test suite passed successfully with 135 tests and no failures.
+
+This strengthens the federated exchange workflow: users can now request announcements across instances, owners can accept or reject them, and the requester’s local replica converges to the correct status through the federation event system. Cross-instance chat and reviews remain future work.
+
+Federation inbox idempotency — safe repeated delivery.
+
+We improved the federation layer by adding stable event identifiers and a persistent inbox ledger for processed federation events. Since the system now uses a persistent outbox and automatic retry, federation messages may be delivered more than once. This follows an at-least-once delivery model, which is common in distributed systems, but it requires idempotency to avoid applying the same event multiple times.
+
+To solve this, each `FederationEvent` now carries a unique `eventId`. This identifier is included in the JSON payload and preserved across failed attempts, manual retries and automatic retries. On the receiving side, we added a MapDB-backed `FederationInboxRepository` using the `processedFederationEvents` collection. Each processed event is stored with its event id, event type, origin instance and processing timestamp.
+
+The inbox now checks the event id before applying an incoming federation event. If the event was already processed, the request returns successfully but the domain operation is not applied again. If the event is new, it is applied normally and then marked as processed. Importantly, failed applications are not marked as processed, so they can still be retried later.
+
+This makes repeated delivery safe for announcement and exchange events. Duplicate announcement events no longer reapply changes unnecessarily, and repeated exchange request or status events do not create duplicate effects. Unit tests were added for event id generation, JSON round-trip preservation, processed-event persistence, duplicate handling, and failure cases. The full Maven test suite passed successfully with 144 tests and no failures.
+
+This strengthens the reliability of the federated architecture: the project now combines availability, persistent outbox retry, automatic recovery and inbox idempotency to support eventual consistency across the local multi-instance demo.
 
