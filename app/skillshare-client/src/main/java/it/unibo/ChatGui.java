@@ -159,18 +159,20 @@ public class ChatGui {
                 DateTimeFormat.PredefinedFormat.HOUR24_MINUTE);
         for (ChatMessage message : messages) {
             String time = timeFormat.format(new Date(message.getTimestamp()));
+            // Show the federated handle (user@instance) so messages coming from
+            // a peer instance are unambiguous when usernames collide.
             messagesPanel.add(new Label(
-                    "[" + time + "] " + message.getSenderUsername() + ": " + message.getText()));
+                    "[" + time + "] " + message.getSenderHandle() + ": " + message.getText()));
         }
     }
 
     private String otherParticipant() {
-        // show the participant who is NOT the current user
+        // show the participant who is NOT the current user, as user@instance
         if (currentUser.getUsername() != null
                 && currentUser.getUsername().equals(exchangeRequest.getFromUsername())) {
-            return exchangeRequest.getToUsername();
+            return exchangeRequest.getToHandle();
         }
-        return exchangeRequest.getFromUsername();
+        return exchangeRequest.getFromHandle();
     }
 
     private String displayValue(String value) {
