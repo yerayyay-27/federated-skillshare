@@ -113,6 +113,6 @@ We extended federation from the shared announcement marketplace to exchange requ
 
 When a user requests an announcement owned by another instance, the requester’s instance stores a local copy and sends the request through the existing federation client. The owner’s instance stores the incoming request under Received. Accepting or rejecting it sends the updated status back so the requester’s local replica eventually converges. Events reuse the persistent outbox and automatic retry scheduler, so temporary peer failures do not block the local operation and deliveries can complete when the peer returns.
 
-Unit tests were added for local-versus-remote broadcasting, instance metadata, acceptance propagation and replica filtering. This change federates the exchange request and response workflow only; cross-instance chat and reviews remain future work, and the complete two-instance Docker flow still requires manual verification.
+Unit tests were added for local-versus-remote broadcasting, instance metadata, acceptance propagation and replica filtering. This change federates the exchange request and response workflow only; cross-instance chat and reviews remain future work and the complete two-instance Docker flow still requires manual verification.
 
 
