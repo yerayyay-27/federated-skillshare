@@ -29,7 +29,7 @@ public class ReputationGui {
         RootPanel.get().clear();
 
         HTML title = new HTML("<h1>Skillshare - Reputation</h1>");
-        HTML subtitle = new HTML("<h2>" + targetUsername + "</h2>");
+        HTML subtitle = new HTML("<h2>" + targetHandle() + "</h2>");
         final Label summaryLabel = new Label("Loading reputation...");
         final VerticalPanel reviewsPanel = new VerticalPanel();
         reviewsPanel.setSpacing(8);
@@ -77,12 +77,22 @@ public class ReputationGui {
         for (Review review : reviews) {
             VerticalPanel card = new VerticalPanel();
             card.setSpacing(2);
-            card.add(new Label(review.getRating() + "/5 - by " + review.getFromUsername()));
+            card.add(new Label(review.getRating() + "/5 - by " + review.getFromHandle()));
             String comment = review.getComment();
             if (comment != null && !comment.trim().isEmpty()) {
                 card.add(new Label(comment));
             }
             reviewsPanel.add(card);
         }
+    }
+
+    private String targetHandle() {
+        if (currentUser != null
+                && targetUsername != null
+                && targetUsername.equals(currentUser.getUsername())
+                && currentUser.getInstance() != null) {
+            return targetUsername + "@" + currentUser.getInstance();
+        }
+        return targetUsername;
     }
 }

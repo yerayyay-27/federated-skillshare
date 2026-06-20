@@ -30,4 +30,20 @@ class FederationEventTest {
         assertEquals(original.getEventId(), restored.getEventId());
         assertEquals(original.getType(), restored.getType());
     }
+
+    @Test
+    void reviewCreatedCarriesReviewAndEventId() {
+        Review review = new Review(
+                "review-1", "exchange-1", "alice", "bob",
+                5, "Great", System.currentTimeMillis());
+        review.setFromInstance("inst-a");
+        review.setToInstance("inst-b");
+
+        FederationEvent event = FederationEvent.reviewCreated("inst-a", review);
+
+        assertEquals(FederationEvent.TYPE_REVIEW_CREATED, event.getType());
+        assertEquals("review-1", event.getReview().getId());
+        assertNotNull(event.getEventId());
+        assertFalse(event.getEventId().trim().isEmpty());
+    }
 }

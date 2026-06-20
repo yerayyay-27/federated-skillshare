@@ -34,6 +34,7 @@ public class FederationEvent implements Serializable {
     public static final String TYPE_EXCHANGE_REJECTED = "ExchangeRejected";
 
     public static final String TYPE_CHAT_MESSAGE_CREATED = "ChatMessageCreated";
+    public static final String TYPE_REVIEW_CREATED = "ReviewCreated";
 
     private String eventId;
     private String type;
@@ -42,6 +43,7 @@ public class FederationEvent implements Serializable {
     private String announcementId;              // payload for Announcement Deleted
     private ExchangeRequest exchangeRequest;    // payload for all Exchange events
     private ChatMessage chatMessage;            // payload for Chat events
+    private Review review;                      // payload for Review events
 
     public FederationEvent() {
     }
@@ -104,6 +106,12 @@ public class FederationEvent implements Serializable {
         return event;
     }
 
+    public static FederationEvent reviewCreated(String originInstance, Review review) {
+        FederationEvent event = newEvent(TYPE_REVIEW_CREATED, originInstance);
+        event.review = review;
+        return event;
+    }
+
     void ensureEventId() {
         if (eventId == null || eventId.trim().isEmpty()) {
             eventId = UUID.randomUUID().toString();
@@ -138,4 +146,7 @@ public class FederationEvent implements Serializable {
 
     public ChatMessage getChatMessage() { return chatMessage; }
     public void setChatMessage(ChatMessage chatMessage) { this.chatMessage = chatMessage; }
+
+    public Review getReview() { return review; }
+    public void setReview(Review review) { this.review = review; }
 }

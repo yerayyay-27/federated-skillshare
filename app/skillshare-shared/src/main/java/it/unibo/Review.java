@@ -10,6 +10,8 @@ public class Review implements Serializable {
     private String exchangeRequestId;
     private String fromUsername;   // who writes the review
     private String toUsername;     // who is being reviewed
+    private String fromInstance;
+    private String toInstance;
     private int rating;            // 1..5
     private String comment;
     private long timestamp;
@@ -39,6 +41,20 @@ public class Review implements Serializable {
 
     public String getToUsername() { return toUsername; }
     public void setToUsername(String toUsername) { this.toUsername = toUsername; }
+
+    public String getFromInstance() { return fromInstance; }
+    public void setFromInstance(String fromInstance) { this.fromInstance = fromInstance; }
+
+    public String getToInstance() { return toInstance; }
+    public void setToInstance(String toInstance) { this.toInstance = toInstance; }
+
+    public String getFromHandle() {
+        return fromInstance == null ? fromUsername : fromUsername + "@" + fromInstance;
+    }
+
+    public String getToHandle() {
+        return toInstance == null ? toUsername : toUsername + "@" + toInstance;
+    }
 
     public int getRating() { return rating; }
     public void setRating(int rating) { this.rating = rating; }
