@@ -65,6 +65,7 @@ class FederationClientTest {
                 new String[] { "http://peer-a:8080" });
         client.failPeer("http://peer-a:8080");
         client.broadcast(event());
+        String eventId = repository.findFailed().get(0).getEvent().getEventId();
         client.recoverPeer("http://peer-a:8080");
 
         int delivered = client.retryPending();
@@ -74,6 +75,7 @@ class FederationClientTest {
         OutgoingFederationEvent stored = repository.findAll().get(0);
         assertEquals(FederationDeliveryStatus.DELIVERED, stored.getStatus());
         assertEquals(2, stored.getAttemptCount());
+        assertEquals(eventId, stored.getEvent().getEventId());
     }
 
     @Test
@@ -91,6 +93,27 @@ class FederationClientTest {
                 .filter(e -> FederationDeliveryStatus.DELIVERED.equals(e.getStatus()))
                 .count();
         assertEquals(1, delivered);
+        Set<String> eventIds = new HashSet<>();
+        repository.findAll().forEach(e -> eventIds.add(e.getEvent().getEventId()));
+        assertEquals(1, eventIds.size());
+    }
+
+    @Test
+    void broadcastBackfillsEventIdForLegacyEvent() {
+        TestFederationClient client = new TestFederationClient(
+                repository,
+                new String[] { "http://peer-a:8080" });
+        FederationEvent legacy = new FederationEvent();
+        legacy.setType(FederationEvent.TYPE_ANNOUNCEMENT_DELETED);
+        legacy.setOriginInstance("inst-a");
+        legacy.setAnnouncementId("ann-legacy");
+
+        client.broadcast(legacy);
+
+        assertTrue(legacy.getEventId() != null && !legacy.getEventId().trim().isEmpty());
+        assertEquals(
+                legacy.getEventId(),
+                repository.findAll().get(0).getEvent().getEventId());
     }
 
     private FederationEvent event() {

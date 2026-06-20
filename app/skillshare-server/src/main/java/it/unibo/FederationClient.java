@@ -51,6 +51,7 @@ public class FederationClient {
         if (event == null) {
             throw new IllegalArgumentException("Federation event must not be null");
         }
+        event.ensureEventId();
 
         List<String> peers = peerSupplier.get();
         Instant now = Instant.now();
@@ -101,6 +102,9 @@ public class FederationClient {
     }
 
     private void attemptDelivery(OutgoingFederationEvent outgoing) {
+        // Backfill events persisted before event IDs were introduced. The
+        // outbox update below makes the generated ID stable for later retries.
+        outgoing.getEvent().ensureEventId();
         String json = gson.toJson(outgoing.getEvent());
         Instant attemptedAt = Instant.now();
         try {

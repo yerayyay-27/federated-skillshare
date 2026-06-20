@@ -48,21 +48,21 @@ public class ExchangeRequestManager {
             throw new IllegalArgumentException("Announcement not found or not active");
         }
 
+        String localInstance = FederationConfig.get().getInstanceId();
         String owner = announcement.getOwnerUsername();
-        if (fromUsername.equals(owner)) {
+        // The owner's instance is the announcement's home instance. If the
+        // announcement predates federation (null), it is a purely local owner.
+        String ownerInstance = announcement.getOriginInstance() == null
+                ? localInstance
+                : announcement.getOriginInstance();
+
+        if (sameIdentity(fromUsername, localInstance, owner, ownerInstance)) {
             throw new IllegalArgumentException("You cannot request your own announcement");
         }
         if (hasPendingRequest(announcementId, fromUsername)) {
             throw new IllegalArgumentException(
                     "You already have a pending request for this announcement");
         }
-
-        String localInstance = FederationConfig.get().getInstanceId();
-        // The owner's instance is the announcement's home instance. If the
-        // announcement predates federation (null), it is a purely local owner.
-        String ownerInstance = announcement.getOriginInstance() == null
-                ? localInstance
-                : announcement.getOriginInstance();
 
         ExchangeRequest request = new ExchangeRequest(
                 UUID.randomUUID().toString(),
@@ -155,6 +155,15 @@ public class ExchangeRequestManager {
 
     private boolean isRemote(String instance, String localInstance) {
         return instance != null && !instance.equals(localInstance);
+    }
+
+    private boolean sameIdentity(
+            String firstUsername,
+            String firstInstance,
+            String secondUsername,
+            String secondInstance) {
+        return firstUsername.equals(secondUsername)
+                && firstInstance.equals(secondInstance);
     }
 
     private void requireNotBlank(String value, String message) {

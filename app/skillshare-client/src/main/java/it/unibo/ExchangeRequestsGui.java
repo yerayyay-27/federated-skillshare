@@ -100,7 +100,7 @@ public class ExchangeRequestsGui {
         for (final ExchangeRequest request : requests) {
             VerticalPanel card = new VerticalPanel();
             card.setSpacing(4);
-            card.add(new Label("From: " + request.getFromUsername()));
+            card.add(new Label("From: " + request.getFromHandle()));
             card.add(new Label("Skill: " + request.getAnnouncementOfferedSkill()));
             card.add(new Label("Message: " + displayValue(request.getMessage())));
             card.add(new Label("Status: " + request.getStatus()));
@@ -137,7 +137,7 @@ public class ExchangeRequestsGui {
         for (final ExchangeRequest request : requests) {
             VerticalPanel card = new VerticalPanel();
             card.setSpacing(4);
-            card.add(new Label("To: " + request.getToUsername()));
+            card.add(new Label("To: " + request.getToHandle()));
             card.add(new Label("Skill: " + request.getAnnouncementOfferedSkill()));
             card.add(new Label("Status: " + request.getStatus()));
 

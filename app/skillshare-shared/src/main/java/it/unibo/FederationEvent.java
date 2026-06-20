@@ -1,6 +1,7 @@
 package it.unibo;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 /**
  * An event exchanged between federated instances.
@@ -27,6 +28,7 @@ public class FederationEvent implements Serializable {
     public static final String TYPE_EXCHANGE_ACCEPTED = "ExchangeAccepted";
     public static final String TYPE_EXCHANGE_REJECTED = "ExchangeRejected";
 
+    private String eventId;
     private String type;
     private String originInstance;
     private Announcement announcement;          // payload for Announcement Created / Updated
@@ -37,25 +39,19 @@ public class FederationEvent implements Serializable {
     }
 
     public static FederationEvent announcementCreated(String originInstance, Announcement announcement) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_ANNOUNCEMENT_CREATED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_ANNOUNCEMENT_CREATED, originInstance);
         event.announcement = announcement;
         return event;
     }
 
     public static FederationEvent announcementUpdated(String originInstance, Announcement announcement) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_ANNOUNCEMENT_UPDATED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_ANNOUNCEMENT_UPDATED, originInstance);
         event.announcement = announcement;
         return event;
     }
 
     public static FederationEvent announcementDeleted(String originInstance, String announcementId) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_ANNOUNCEMENT_DELETED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_ANNOUNCEMENT_DELETED, originInstance);
         event.announcementId = announcementId;
         return event;
     }
@@ -66,9 +62,7 @@ public class FederationEvent implements Serializable {
      * The whole ExchangeRequest is carried, so delivery is idempotent.
      */
     public static FederationEvent exchangeRequested(String originInstance, ExchangeRequest exchangeRequest) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_EXCHANGE_REQUESTED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_EXCHANGE_REQUESTED, originInstance);
         event.exchangeRequest = exchangeRequest;
         return event;
     }
@@ -79,21 +73,34 @@ public class FederationEvent implements Serializable {
      * replica's status and the two converge.
      */
     public static FederationEvent exchangeAccepted(String originInstance, ExchangeRequest exchangeRequest) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_EXCHANGE_ACCEPTED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_EXCHANGE_ACCEPTED, originInstance);
         event.exchangeRequest = exchangeRequest;
         return event;
     }
 
     /** The owner rejected the exchange. Same convergence logic as accepted. */
     public static FederationEvent exchangeRejected(String originInstance, ExchangeRequest exchangeRequest) {
-        FederationEvent event = new FederationEvent();
-        event.type = TYPE_EXCHANGE_REJECTED;
-        event.originInstance = originInstance;
+        FederationEvent event = newEvent(TYPE_EXCHANGE_REJECTED, originInstance);
         event.exchangeRequest = exchangeRequest;
         return event;
     }
+
+    void ensureEventId() {
+        if (eventId == null || eventId.trim().isEmpty()) {
+            eventId = UUID.randomUUID().toString();
+        }
+    }
+
+    private static FederationEvent newEvent(String type, String originInstance) {
+        FederationEvent event = new FederationEvent();
+        event.ensureEventId();
+        event.type = type;
+        event.originInstance = originInstance;
+        return event;
+    }
+
+    public String getEventId() { return eventId; }
+    public void setEventId(String eventId) { this.eventId = eventId; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }

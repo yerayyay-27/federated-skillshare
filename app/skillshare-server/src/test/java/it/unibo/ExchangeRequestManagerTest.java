@@ -149,6 +149,37 @@ class ExchangeRequestManagerTest {
     }
 
     @Test
+    void sameUsernameOnDifferentInstanceCanRequestRemoteAnnouncement() {
+        Announcement remoteAnnouncement = new Announcement(
+                "ann-same-name-remote", "alice", "Piano", "Cooking",
+                "Lessons", "Weekends", true);
+        remoteAnnouncement.setOriginInstance(REMOTE_INSTANCE);
+        announcementRepository.save(remoteAnnouncement);
+
+        ExchangeRequest request = manager.createRequest(
+                "ann-same-name-remote", "alice", "hello from another alice");
+
+        assertEquals("alice@" + LOCAL_INSTANCE, request.getFromHandle());
+        assertEquals("alice@" + REMOTE_INSTANCE, request.getToHandle());
+        assertEquals(1, federation.events.size());
+        assertEquals(FederationEvent.TYPE_EXCHANGE_REQUESTED,
+                federation.events.get(0).getType());
+    }
+
+    @Test
+    void sameUsernameOnLocalInstanceCannotRequestOwnAnnouncement() {
+        Announcement localAnnouncement = new Announcement(
+                "ann-same-name-local", "alice", "Java", "Spanish",
+                "Local lessons", "Evenings", true);
+        localAnnouncement.setOriginInstance(LOCAL_INSTANCE);
+        announcementRepository.save(localAnnouncement);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> manager.createRequest("ann-same-name-local", "alice", "x"));
+        assertTrue(federation.events.isEmpty());
+    }
+
+    @Test
     void acceptingRemoteRequesterBroadcastsAccepted() {
         // This instance is the owner; the requester lives on a remote instance.
         ExchangeRequest inbound = new ExchangeRequest(
@@ -162,6 +193,22 @@ class ExchangeRequestManagerTest {
 
         assertEquals(1, federation.events.size());
         assertEquals(FederationEvent.TYPE_EXCHANGE_ACCEPTED,
+                federation.events.get(0).getType());
+    }
+
+    @Test
+    void rejectingRemoteRequesterBroadcastsRejected() {
+        ExchangeRequest inbound = new ExchangeRequest(
+                "ex-remote-rejected", "ann-1", "Java tutoring",
+                "bob", "alice", "hi", ExchangeRequest.STATUS_PENDING);
+        inbound.setFromInstance(REMOTE_INSTANCE);
+        inbound.setToInstance(LOCAL_INSTANCE);
+        exchangeRepository.save(inbound);
+
+        assertTrue(manager.rejectRequest("ex-remote-rejected"));
+
+        assertEquals(1, federation.events.size());
+        assertEquals(FederationEvent.TYPE_EXCHANGE_REJECTED,
                 federation.events.get(0).getType());
     }
 
