@@ -74,15 +74,22 @@ public class LoginGui {
 
                 loginButton.setEnabled(false);
 
-                authService.login(email, password, new AsyncCallback<User>() {
+                authService.login(email, password, new AsyncCallback<LoginResult>() {
                     public void onFailure(Throwable caught) {
+                        // Only genuine transport/server faults reach here now.
                         loginButton.setEnabled(true);
-                        errorLabel.setText(caught.getMessage());
+                        errorLabel.setText("Could not reach the server. Please try again.");
                     }
-                    public void onSuccess(User user) {
+                    public void onSuccess(LoginResult result) {
                         loginButton.setEnabled(true);
-                        // Login successful: move to the home screen, passing the logged-in user
-                        new HomeGui(user).show();
+                        if (result.isSuccess()) {
+                            // Login successful: move to the home screen.
+                            new HomeGui(result.getUser()).show();
+                        } else {
+                            // Expected failure (unknown email / wrong password):
+                            // show the reason like the review screen does.
+                            errorLabel.setText(result.getErrorReason());
+                        }
                     }
                 });
             }
@@ -95,7 +102,7 @@ public class LoginGui {
         // --- Navigation to the registration screen ---
         goToRegisterButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                new RegisterGui().show();   
+                new RegisterGui().show();
             }
         });
     }
