@@ -20,16 +20,20 @@ public class AuthServiceImpl extends RemoteServiceServlet implements AuthService
     }
 
     @Override
-    public User login(String email, String password) throws IllegalArgumentException {
+    public LoginResult login(String email, String password) {
         if (email == null || password == null
                 || email.trim().isEmpty() || password.isEmpty()) {
-            throw new IllegalArgumentException("Email and password are required");
+            return LoginResult.failure("Please enter both email and password.");
         }
         String key = email.trim();
-        if (!userRepository.checkPassword(key, password)) {
-            throw new IllegalArgumentException("Wrong email or password");
+        // Distinguish the two failure cases so the user gets a clear reason.
+        if (!userRepository.exists(key)) {
+            return LoginResult.failure("No account found for this email.");
         }
-        return userRepository.getUser(key);
+        if (!userRepository.checkPassword(key, password)) {
+            return LoginResult.failure("Incorrect password.");
+        }
+        return LoginResult.success(userRepository.getUser(key));
     }
 
     @Override
