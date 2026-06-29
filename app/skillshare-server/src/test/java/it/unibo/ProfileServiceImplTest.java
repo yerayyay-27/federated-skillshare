@@ -2,6 +2,7 @@ package it.unibo;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -88,5 +89,27 @@ class ProfileServiceImplTest {
     void rejectUnknownUserPhoto() {
         assertThrows(IllegalArgumentException.class,
                 () -> service.updatePhoto("ghost@unibo.it", "data:image/png;base64,AAAA"));
+    }
+
+    @Test
+    void getProfileByUsernameReturnsPublicProfile() {
+        service.updateProfile("alice@unibo.it", "Hi there", Arrays.asList("Java"));
+
+        User profile = service.getProfileByUsername("Alice");
+
+        assertNotNull(profile);
+        assertEquals("Alice", profile.getUsername());
+        assertEquals("Hi there", profile.getBio());
+        assertEquals(Arrays.asList("Java"), profile.getSkillTags());
+    }
+
+    @Test
+    void getProfileByUnknownUsernameReturnsNull() {
+        assertNull(service.getProfileByUsername("Ghost"));
+    }
+
+    @Test
+    void getProfileByBlankUsernameReturnsNull() {
+        assertNull(service.getProfileByUsername("  "));
     }
 }

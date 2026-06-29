@@ -187,6 +187,9 @@ public class MarketplaceGui {
                 ownerActions.add(deleteButton);
                 announcementPanel.add(ownerActions);
             } else {
+                HorizontalPanel actions = new HorizontalPanel();
+                actions.setSpacing(6);
+
                 Button requestButton = new Button("Request exchange");
                 requestButton.addClickHandler(new ClickHandler() {
                     @Override
@@ -194,7 +197,20 @@ public class MarketplaceGui {
                         requestExchange(announcement.getId());
                     }
                 });
-                announcementPanel.add(requestButton);
+
+                // Visit the owner's public profile (and from there, reputation).
+                Button viewProfileButton = new Button("View profile");
+                viewProfileButton.addClickHandler(new ClickHandler() {
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        new PublicProfileGui(
+                                currentUser, announcement.getOwnerUsername()).show();
+                    }
+                });
+
+                actions.add(requestButton);
+                actions.add(viewProfileButton);
+                announcementPanel.add(actions);
             }
 
             announcementListPanel.add(announcementPanel);

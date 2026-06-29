@@ -11,4 +11,8 @@ public interface ProfileService extends RemoteService {
             throws IllegalArgumentException;
 
     User updatePhoto(String email, String photo) throws IllegalArgumentException;
+
+    // Public read-only profile of another user, looked up by username.
+    // Returns null if no local user has that username.
+    User getProfileByUsername(String username);
 }

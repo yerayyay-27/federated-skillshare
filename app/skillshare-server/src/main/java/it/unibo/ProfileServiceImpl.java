@@ -55,4 +55,14 @@ public class ProfileServiceImpl extends RemoteServiceServlet implements ProfileS
         userRepository.updatePhoto(key, photo);
         return userRepository.getUser(key);
     }
+
+    @Override
+    public User getProfileByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return null;
+        }
+        // getUser/findByUsername never expose the password, so the returned
+        // User is safe to show as a public profile.
+        return userRepository.findByUsername(username.trim());
+    }
 }
