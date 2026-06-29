@@ -9,4 +9,6 @@ public interface ProfileServiceAsync {
             AsyncCallback<User> callback);
 
     void updatePhoto(String email, String photo, AsyncCallback<User> callback);
+
+    void getProfileByUsername(String username, AsyncCallback<User> callback);
 }

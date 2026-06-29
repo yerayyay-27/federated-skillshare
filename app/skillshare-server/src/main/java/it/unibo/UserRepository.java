@@ -3,6 +3,7 @@ package it.unibo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.mapdb.DB;
@@ -80,5 +81,23 @@ public class UserRepository {
         // Federated identity: every user belongs to this instance.
         user.setInstance(FederationConfig.get().getInstanceId());
         return user;
+    }
+
+    // Looks up a user by their display username (usernames are stored as
+    // email -> username). Used to show another user's public profile. Returns
+    // the first match, or null if no local user has that username. Usernames
+    // are not guaranteed unique across emails, which mirrors how reputation is
+    // already keyed by username.
+    public User findByUsername(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            return null;
+        }
+        String target = username.trim();
+        for (Map.Entry<String, String> entry : usernames.entrySet()) {
+            if (target.equals(entry.getValue())) {
+                return getUser(entry.getKey()); // key is the email
+            }
+        }
+        return null;
     }
 }
