@@ -20,10 +20,19 @@ public class PublicProfileGui {
     private final ProfileServiceAsync profileService = GWT.create(ProfileService.class);
     private final User currentUser;
     private final String targetUsername;
+    // Where the "Back" button goes, with a label naming the destination. If
+    // null, defaults to the marketplace (where this profile is normally opened
+    // from). Another caller can pass its own back target.
+    private final BackTarget backTarget;
 
     public PublicProfileGui(User currentUser, String targetUsername) {
+        this(currentUser, targetUsername, null);
+    }
+
+    public PublicProfileGui(User currentUser, String targetUsername, BackTarget backTarget) {
         this.currentUser = currentUser;
         this.targetUsername = targetUsername;
+        this.backTarget = backTarget;
     }
 
     public void show() {
@@ -36,10 +45,11 @@ public class PublicProfileGui {
         contentPanel.setSpacing(10);
         contentPanel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_CENTER);
 
-        final Button backButton = new Button("Back to marketplace");
+        final Button backButton = new Button(
+                backTarget == null ? "Back to marketplace" : backTarget.getLabel());
         backButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                new MarketplaceGui(currentUser).show();
+                goBack();
             }
         });
 
@@ -71,6 +81,14 @@ public class PublicProfileGui {
         });
     }
 
+    private void goBack() {
+        if (backTarget != null) {
+            backTarget.go();
+        } else {
+            new MarketplaceGui(currentUser).show();
+        }
+    }
+
     private void render(VerticalPanel panel, final User profile) {
         panel.clear();
         panel.add(new HTML("<h2>" + profile.getUsername() + "</h2>"));
@@ -93,7 +111,16 @@ public class PublicProfileGui {
         Button reputationButton = new Button("View reputation");
         reputationButton.addClickHandler(new ClickHandler() {
             public void onClick(ClickEvent event) {
-                new ReputationGui(currentUser, profile.getUsername()).show();
+                // Back from reputation returns to THIS profile, naming it, and
+                // the profile keeps its own back target so the chain stays right.
+                BackTarget backToProfile = new BackTarget(
+                        "Back to " + profile.getUsername() + "'s profile",
+                        new Runnable() {
+                            public void run() {
+                                new PublicProfileGui(currentUser, targetUsername, backTarget).show();
+                            }
+                        });
+                new ReputationGui(currentUser, profile.getUsername(), backToProfile).show();
             }
         });
         panel.add(reputationButton);
